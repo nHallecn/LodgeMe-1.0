@@ -1,4 +1,4 @@
-# Lodgeme
+# LodgeMe - Rental Marketplace Platform
 
 **Lodgeme** is a full-stack property rental and booking management platform designed to connect **tenants and landlords**.
 It allows users to search for rental properties, book rooms, manage payments, and handle property operations through a modern web interface.
