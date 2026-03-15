@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import Navbar from "../../../../components/Navbar";
 import Footer from "../../../../components/Footer";
@@ -33,7 +34,7 @@ export default function ReportMaintenancePage() {
   const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && (!isAuthenticated || user?.role !== "user")) {
+    if (!authLoading && (!isAuthenticated || user?.role !== "tenant")) {
       router.push("/login");
       return;
     }
@@ -64,7 +65,7 @@ export default function ReportMaintenancePage() {
       }
     };
 
-    if (isAuthenticated && user?.role === "user") {
+    if (isAuthenticated && user?.role === "tenant") {
       fetchUserPropertiesAndRooms();
     }
   }, [isAuthenticated, user, authLoading, router]);

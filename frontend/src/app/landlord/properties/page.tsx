@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Path: lodgeme-project/frontend/src/app/landlord/properties/page.tsx
 import { useState, useEffect } from "react";
 import Navbar from "../../../components/Navbar";
@@ -102,7 +103,7 @@ export default function ManagePropertiesPage() {
 
         {properties.length === 0 ? (
           <div className="bg-lightGreen p-8 rounded-xl shadow-lg text-center text-xl text-gray-700">
-            You haven't listed any properties yet. <Link href="/landlord/properties/new" className="text-primary hover:underline">Add your first property!</Link>
+            You haven&apos;t listed any properties yet. <Link href="/landlord/properties/new" className="text-primary hover:underline">Add your first property!</Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

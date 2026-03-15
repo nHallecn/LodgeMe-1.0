@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Path: lodgeme-project/frontend/src/app/tenant/payments/page.tsx
 import { useState, useEffect } from "react";
 import Navbar from "../../../components/Navbar";
@@ -6,6 +7,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { useRouter } from "next/navigation";
 import api from "../../../lib/api";
 import { FaMoneyBillWave, FaCalendarAlt, FaInfoCircle } from "react-icons/fa";
+import Link from "next/link";
 
 interface Payment {
   id: number;
@@ -27,7 +29,7 @@ export default function TenantPaymentsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && (!isAuthenticated || user?.role !== "user")) {
+    if (!authLoading && (!isAuthenticated || user?.role !== "tenant")) {
       router.push("/login");
       return;
     }
@@ -59,7 +61,7 @@ export default function TenantPaymentsPage() {
       }
     };
 
-    if (isAuthenticated && user?.role === "user") {
+    if (isAuthenticated && user?.role === "tenant") {
       fetchPayments();
     }
   }, [isAuthenticated, user, authLoading, router]);

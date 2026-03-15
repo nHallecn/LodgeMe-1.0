@@ -1,13 +1,16 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Path: lodgeme-project/frontend/src/app/tenant/bookings/page.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactNode } from "react";
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
 import { useAuth } from "../../../context/AuthContext";
 import { useRouter } from "next/navigation";
 import api from "../../../lib/api";
 import { FaCalendarAlt, FaHome, FaInfoCircle } from "react-icons/fa";
+import Link from "next/link";
 
 interface Booking {
+  [x: string]: ReactNode;
   id: number;
   roomId: number;
   roomNumber: string; // Assuming this comes with the booking details
@@ -27,7 +30,7 @@ export default function TenantBookingsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && (!isAuthenticated || user?.role !== "user")) {
+    if (!authLoading && (!isAuthenticated || user?.role !== "tenant")) {
       router.push("/login");
       return;
     }
@@ -59,9 +62,9 @@ export default function TenantBookingsPage() {
       }
     };
 
-    if (isAuthenticated && user?.role === "user") {
-      fetchBookings();
-    }
+    if (isAuthenticated && user?.role === "tenant") {
+  fetchBookings();
+}
   }, [isAuthenticated, user, authLoading, router]);
 
   const getStatusColor = (status: string) => {

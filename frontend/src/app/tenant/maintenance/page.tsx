@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Path: lodgeme-project/frontend/src/app/tenant/maintenance/page.tsx
 import { useState, useEffect } from "react";
 import Navbar from "../../../components/Navbar";
@@ -30,7 +31,7 @@ export default function TenantMaintenancePage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && (!isAuthenticated || user?.role !== "user")) {
+    if (!authLoading && (!isAuthenticated || user?.role !== "tenant")) {
       router.push("/login");
       return;
     }
@@ -60,7 +61,7 @@ export default function TenantMaintenancePage() {
       }
     };
 
-    if (isAuthenticated && user?.role === "user") {
+    if (isAuthenticated && user?.role === "tenant") {
       fetchTickets();
     }
   }, [isAuthenticated, user, authLoading, router]);

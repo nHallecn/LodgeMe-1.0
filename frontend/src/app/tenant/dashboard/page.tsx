@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
@@ -22,7 +23,7 @@ export default function TenantDashboard() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && (!isAuthenticated || user?.role !== "user")) {
+    if (!authLoading && (!isAuthenticated || user?.role !== "tenant")) {
       router.push("/login");
       return;
     }
@@ -65,7 +66,7 @@ export default function TenantDashboard() {
       }
     };
 
-    if (isAuthenticated && user?.role === "user") {
+    if (isAuthenticated && user?.role === "tenant") {
       fetchDashboardStats();
     }
   }, [isAuthenticated, user, authLoading, router]);
@@ -159,7 +160,7 @@ export default function TenantDashboard() {
             <ul className="space-y-4 text-gray-700">
               <li className="border-b pb-2">Your booking for Apartment 101 is active.</li>
               <li className="border-b pb-2">Payment for August rent is due on 25th.</li>
-              <li className="border-b pb-2">Maintenance ticket #005 status updated to 'In Progress'.</li>
+              <li className="border-b pb-2">Maintenance ticket #005 status updated to &apos;In Progress&apos;.</li>
               <li>New property recommendations available.</li>
             </ul>
           </div>

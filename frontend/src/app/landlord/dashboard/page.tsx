@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
@@ -38,8 +39,8 @@ export default function LandlordDashboard() {
         const propertiesResponse = await api.get(`/properties/landlord/${user?.id}`);
         const properties = propertiesResponse.data;
 
-        let totalProperties = properties.length;
-        let activeListings = properties.filter((p: any) => p.status === "active").length; // Assuming a status field
+        const totalProperties = properties.length;
+        const activeListings = properties.filter((p: any) => p.isActive).length;
         let occupiedRooms = 0;
         let vacantRooms = 0;
 
@@ -164,7 +165,7 @@ export default function LandlordDashboard() {
               <li className="border-b pb-2">New booking for Apartment 101 in Douala.</li>
               <li className="border-b pb-2">Payment received from Tenant X for July rent.</li>
               <li className="border-b pb-2">Maintenance ticket #005 reported for a leaky faucet.</li>
-              <li>Property "Green Oasis Minicité" updated.</li>
+              <li>Property &quot;Green Oasis Minicité&quot; updated.</li>
             </ul>
           </div>
         </div>

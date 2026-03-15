@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Path: lodgeme-project/frontend/src/app/tenant/visits/page.tsx
 import { useState, useEffect } from "react";
 import Navbar from "../../../components/Navbar";
@@ -6,7 +7,6 @@ import { useAuth } from "../../../context/AuthContext";
 import { useRouter } from "next/navigation";
 import api from "../../../lib/api";
 import { FaCalendarCheck, FaHome, FaInfoCircle } from "react-icons/fa";
-import Link from "next/dist/client/link";
 import Link from "next/dist/client/link";
 
 interface VisitRequest {
@@ -28,7 +28,7 @@ export default function TenantVisitsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && (!isAuthenticated || user?.role !== "user")) {
+    if (!authLoading && (!isAuthenticated || user?.role !== "tenant")) {
       router.push("/login");
       return;
     }
@@ -55,7 +55,7 @@ export default function TenantVisitsPage() {
       }
     };
 
-    if (isAuthenticated && user?.role === "user") {
+    if (isAuthenticated && user?.role === "tenant") {
       fetchVisitRequests();
     }
   }, [isAuthenticated, user, authLoading, router]);

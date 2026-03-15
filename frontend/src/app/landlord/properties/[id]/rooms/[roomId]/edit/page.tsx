@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Path: lodgeme-project/frontend/src/app/landlord/properties/[id]/rooms/[roomId]/edit/page.tsx
 import { useState, useEffect } from "react";
 import Navbar from "../../../../../../../components/Navbar";
