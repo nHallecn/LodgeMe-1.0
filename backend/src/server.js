@@ -12,6 +12,7 @@ const bookingRoutes = require("./routes/bookingRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const invoiceRoutes = require("./routes/invoiceRoutes");
 const maintenanceTicketRoutes = require("./routes/maintenanceTicketRoutes");
+const visitRequestRoutes = require("./routes/visitRequestRoutes");
 
 // Import middleware
 const errorHandler = require("./utils/errorHandler");
@@ -29,6 +30,7 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/invoices", invoiceRoutes);
 app.use("/api/maintenance-tickets", maintenanceTicketRoutes);
+app.use("/api/visits", visitRequestRoutes);
 
 // Error handling middleware
 app.use(errorHandler);
