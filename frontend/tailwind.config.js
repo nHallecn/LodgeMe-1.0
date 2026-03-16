@@ -1,3 +1,4 @@
+// Path: lodgeme-project/frontend/tailwind.config.js
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [

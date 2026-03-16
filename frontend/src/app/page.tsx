@@ -1,9 +1,10 @@
+// Path: lodgeme-project/frontend/src/app/page.tsx
 import Image from "next/image";
 import Link from "next/link";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import PropertyCard from "../components/PropertyCard";
-import GoogleMap from "../components/GoogleMap";
+import LeafletMap from "../components/LeafletMap"; // Import LeafletMap
 
 export default function Home() {
   // Example property data (replace with actual data from API)
@@ -133,9 +134,7 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-10">
               {testimonials.map((testimonial, index) => (
                 <div key={testimonial.id} className="bg-lightGreen p-8 rounded-xl shadow-lg text-center animate-slide-up" style={{ animationDelay: `${0.1 * index}s` }}>
-                  <p className="text-gray-800 text-lg italic mb-4">
-  &ldquo;{testimonial.quote}&rdquo;
-</p>
+                  <p className="text-gray-800 text-lg italic mb-4">\&quot;{testimonial.quote}\&quot;</p>
                   <p className="font-semibold text-darkGreen">- {testimonial.name}</p>
                 </div>
               ))}
@@ -143,21 +142,17 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Google Maps Integration Section */}
+        {/* Map Integration Section */}
         <section className="py-20 bg-lightGreen">
           <div className="container mx-auto px-4 text-center">
             <h2 className="section-heading">Explore Rentals on the Map</h2>
             <p className="section-subheading">Visualize available properties and their locations across Cameroon.</p>
             <div className="bg-white rounded-xl shadow-lg h-[500px] mt-10 overflow-hidden animate-fade-in">
-              <GoogleMap
-                center={{ lat: 5.0, lng: 12.5 }} // Centered around Cameroon
+              <LeafletMap
+                latitude={5.0} // Centered around Cameroon
+                longitude={12.5}
                 zoom={7}
-                markers={[
-                  { lat: 4.05, lng: 9.7, title: "Douala Property" },
-                  { lat: 3.86, lng: 11.52, title: "Yaounde Property" },
-                  { lat: 4.15, lng: 9.23, title: "Limbe Property" },
-                  { lat: 4.05, lng: 9.32, title: "Buea Property" },
-                ]} // Example markers
+                popupText="Property Location"
               />
             </div>
           </div>
