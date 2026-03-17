@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Path: lodgeme-project/frontend/src/app/tenant/maintenance/page.tsx
+"use client";
 import { useState, useEffect } from "react";
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";

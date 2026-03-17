@@ -1,6 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-// Path: lodgeme-project/frontend/src/app/properties/page.tsx
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+
+"use client";
 import { useState, useEffect } from "react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";

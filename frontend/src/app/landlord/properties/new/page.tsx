@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
 import { useState, useEffect } from "react";
 import Navbar from "../../../../components/Navbar";
 import Footer from "../../../../components/Footer";
