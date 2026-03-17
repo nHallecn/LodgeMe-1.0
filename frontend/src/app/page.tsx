@@ -3,8 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import PropertyCard from "../components/PropertyCard";
-import LeafletMap from "../components/LeafletMap"; // Import LeafletMap
+import PropertyCard from "../components/PropertyCard";import MapSection from "@/components/MapSection";
 
 export default function Home() {
   // Example property data (replace with actual data from API)
@@ -148,12 +147,7 @@ export default function Home() {
             <h2 className="section-heading">Explore Rentals on the Map</h2>
             <p className="section-subheading">Visualize available properties and their locations across Cameroon.</p>
             <div className="bg-white rounded-xl shadow-lg h-[500px] mt-10 overflow-hidden animate-fade-in">
-              <LeafletMap
-                latitude={5.0} // Centered around Cameroon
-                longitude={12.5}
-                zoom={7}
-                popupText="Property Location"
-              />
+              <MapSection />
             </div>
           </div>
         </section>
