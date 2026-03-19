@@ -1,36 +1,67 @@
-import Link from "next/link";
+import { Link } from "react-router-dom";
+import { Home, Mail, Phone, MapPin } from "lucide-react";
 
-export default function Footer() {
+const Footer = () => {
   return (
-    <footer className="bg-darkGreen text-white py-8">
-      <div className="container mx-auto px-4 text-center">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-          <div>
-            <h3 className="text-xl font-semibold mb-4">LodgeMe</h3>
-            <p className="text-gray-300">Your trusted partner for rentals in Cameroon.</p>
+    <footer className="border-t border-border bg-foreground text-background">
+      <div className="container mx-auto px-4 py-16">
+        <div className="grid gap-12 md:grid-cols-4">
+          {/* Brand */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
+                <Home className="h-5 w-5 text-primary-foreground" />
+              </div>
+              <span className="font-display text-xl font-bold">LodgeMe</span>
+            </div>
+            <p className="text-sm leading-relaxed opacity-70">
+              Cameroon's most trusted rental marketplace. Connecting tenants with verified landlords seamlessly.
+            </p>
           </div>
-          <div>
-            <h3 className="text-xl font-semibold mb-4">Quick Links</h3>
-            <ul>
-              <li><Link href="/about" className="text-gray-300 hover:text-primary">About Us</Link></li>
-              <li><Link href="/contact" className="text-gray-300 hover:text-primary">Contact</Link></li>
-              <li><Link href="/privacy" className="text-gray-300 hover:text-primary">Privacy Policy</Link></li>
-              <li><Link href="/terms" className="text-gray-300 hover:text-primary">Terms of Service</Link></li>
-            </ul>
+
+          {/* Quick Links */}
+          <div className="space-y-4">
+            <h4 className="font-display text-sm font-semibold uppercase tracking-wider opacity-50">Quick Links</h4>
+            <div className="flex flex-col gap-2">
+              <Link to="/properties" className="text-sm opacity-70 transition-opacity hover:opacity-100">Browse Properties</Link>
+              <Link to="/register" className="text-sm opacity-70 transition-opacity hover:opacity-100">Create Account</Link>
+              <Link to="/login" className="text-sm opacity-70 transition-opacity hover:opacity-100">Sign In</Link>
+            </div>
           </div>
-          <div>
-            <h3 className="text-xl font-semibold mb-4">Connect With Us</h3>
-            <div className="flex justify-center space-x-4">
-              <a href="#" className="text-gray-300 hover:text-primary"><i className="fab fa-facebook-f"></i></a>
-              <a href="#" className="text-gray-300 hover:text-primary"><i className="fab fa-twitter"></i></a>
-              <a href="#" className="text-gray-300 hover:text-primary"><i className="fab fa-instagram"></i></a>
+
+          {/* For Landlords */}
+          <div className="space-y-4">
+            <h4 className="font-display text-sm font-semibold uppercase tracking-wider opacity-50">For Landlords</h4>
+            <div className="flex flex-col gap-2">
+              <Link to="/register" className="text-sm opacity-70 transition-opacity hover:opacity-100">List Property</Link>
+              <span className="text-sm opacity-70">Manage Tenants</span>
+              <span className="text-sm opacity-70">Track Payments</span>
+            </div>
+          </div>
+
+          {/* Contact */}
+          <div className="space-y-4">
+            <h4 className="font-display text-sm font-semibold uppercase tracking-wider opacity-50">Contact</h4>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2 text-sm opacity-70">
+                <MapPin className="h-4 w-4 shrink-0" /> Yaounde, Cameroon
+              </div>
+              <div className="flex items-center gap-2 text-sm opacity-70">
+                <Mail className="h-4 w-4 shrink-0" /> hello@lodgeme.cm
+              </div>
+              <div className="flex items-center gap-2 text-sm opacity-70">
+                <Phone className="h-4 w-4 shrink-0" /> +237 672 433 563
+              </div>
             </div>
           </div>
         </div>
-        <div className="border-t border-gray-700 pt-8 text-gray-400">
-          &copy; {new Date().getFullYear()} LodgeMe. All rights reserved.
+
+        <div className="mt-12 border-t border-background/10 pt-8 text-center text-sm opacity-50">
+          © {new Date().getFullYear()} LodgeMe. All rights reserved.
         </div>
       </div>
     </footer>
   );
-}
+};
+
+export default Footer;
