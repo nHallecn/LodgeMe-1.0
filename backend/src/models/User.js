@@ -1,22 +1,18 @@
 const pool = require("../config/db");
 
 class User {
-  static async create(name, email, password, role = "user") {
+  static async create(openId, name, email, loginMethod, role = "user") {
     const [result] = await pool.execute(
-      "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",
-      [name, email, password, role]
+      "INSERT INTO users (openId, name, email, loginMethod, role) VALUES (?, ?, ?, ?, ?)",
+      [openId, name, email, loginMethod, role]
     );
     return result.insertId;
   }
 
-  static async findByEmail(email) {
-  const [rows] = await db.query(
-    "SELECT * FROM users WHERE email = ?",
-    [email]
-  );
-
-  return rows[0];
-}
+  static async findByOpenId(openId) {
+    const [rows] = await pool.execute("SELECT * FROM users WHERE openId = ?", [openId]);
+    return rows[0];
+  }
 
   static async findById(id) {
     const [rows] = await pool.execute("SELECT * FROM users WHERE id = ?", [id]);

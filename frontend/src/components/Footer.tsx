@@ -44,13 +44,13 @@ const Footer = () => {
             <h4 className="font-display text-sm font-semibold uppercase tracking-wider opacity-50">Contact</h4>
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-2 text-sm opacity-70">
-                <MapPin className="h-4 w-4 shrink-0" /> Douala, Cameroon
+                <MapPin className="h-4 w-4 shrink-0" /> Yaounde, Cameroon
               </div>
               <div className="flex items-center gap-2 text-sm opacity-70">
                 <Mail className="h-4 w-4 shrink-0" /> hello@lodgeme.cm
               </div>
               <div className="flex items-center gap-2 text-sm opacity-70">
-                <Phone className="h-4 w-4 shrink-0" /> +237 6XX XXX XXX
+                <Phone className="h-4 w-4 shrink-0" /> +237 672 433 563
               </div>
             </div>
           </div>
