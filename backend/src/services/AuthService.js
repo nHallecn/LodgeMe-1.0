@@ -5,10 +5,27 @@ const config = require("../config/config");
 
 class AuthService {
   static async registerUser(name, email, password, role) {
+    // Validate input
+    if (!name || !email || !password || !role) {
+      const error = new Error("All fields are required: name, email, password, role");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    // Validate role
+    const validRoles = ["tenant", "landlord", "admin"];
+    if (!validRoles.includes(role)) {
+      const error = new Error(`Invalid role. Must be one of: ${validRoles.join(", ")}`);
+      error.statusCode = 400;
+      throw error;
+    }
+
     // Check if user exists
     const existingUser = await User.findByEmail(email);
     if (existingUser) {
-      throw new Error("User with this email already exists.");
+      const error = new Error("User with this email already exists.");
+      error.statusCode = 409;
+      throw error;
     }
 
     // Hash password
@@ -19,27 +36,44 @@ class AuthService {
 
     const user = await User.findById(userId);
 
+    // Remove sensitive data from user object
+    const userResponse = this.formatUserResponse(user);
+
     const token = this.generateToken(user);
 
-    return { user, token };
+    return { user: userResponse, token };
   }
 
   static async loginUser(email, password) {
+    // Validate input
+    if (!email || !password) {
+      const error = new Error("Email and password are required");
+      error.statusCode = 400;
+      throw error;
+    }
+
     const user = await User.findByEmail(email);
     if (!user) {
-      throw new Error("Invalid credentials.");
+      const error = new Error("Invalid credentials.");
+      error.statusCode = 401;
+      throw error;
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      throw new Error("Invalid credentials.");
+      const error = new Error("Invalid credentials.");
+      error.statusCode = 401;
+      throw error;
     }
 
     await User.updateLastSignedIn(user.id);
 
+    // Remove sensitive data from user object
+    const userResponse = this.formatUserResponse(user);
+
     const token = this.generateToken(user);
 
-    return { user, token };
+    return { user: userResponse, token };
   }
 
   static generateToken(user) {
@@ -54,8 +88,21 @@ class AuthService {
     try {
       return jwt.verify(token, config.jwtSecret);
     } catch {
-      throw new Error("Invalid or expired token.");
+      const error = new Error("Invalid or expired token.");
+      error.statusCode = 401;
+      throw error;
     }
+  }
+
+  static formatUserResponse(user) {
+    // Return only safe fields to the frontend
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phone: user.phone || null,
+    };
   }
 }
 

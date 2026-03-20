@@ -13,21 +13,23 @@ exports.protect = async (req, res, next) => {
       if (!req.user) {
         return res.status(401).json({ message: "Not authorized, user not found" });
       }
-      next();
+      return next();
     } catch (error) {
-      res.status(401).json({ message: "Not authorized, token failed or expired" });
+      return res.status(401).json({ message: "Not authorized, token failed or expired" });
     }
   }
 
   if (!token) {
-    res.status(401).json({ message: "Not authorized, no token provided" });
+    return res.status(401).json({ message: "Not authorized, no token provided" });
   }
 };
 
 exports.authorize = (...roles) => {
   return (req, res, next) => {
     if (!req.user || !roles.includes(req.user.role)) {
-      return res.status(403).json({ message: `User role ${req.user ? req.user.role : 'unknown'} is not authorized to access this route` });
+      return res.status(403).json({
+        message: `User role ${req.user ? req.user.role : "unknown"} is not authorized to access this route`,
+      });
     }
     next();
   };
