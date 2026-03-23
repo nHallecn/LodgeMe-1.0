@@ -4,89 +4,154 @@ import { useAuth } from "@/context/AuthContext";
 import { propertiesAPI } from "@/lib/api";
 import { Property } from "@/types";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, MapPin, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Building2, Plus, MapPin, Edit2, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const LandlordProperties = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const [deleting, setDeleting] = useState<string | null>(null);
 
-  const fetchProperties = async () => {
+  useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        const response = await propertiesAPI.getByLandlord(user?.id || "");
+        const data = Array.isArray(response.data) ? response.data : response.data.properties || [];
+        setProperties(data);
+      } catch (err) {
+        toast({
+          title: "Failed to load properties",
+          description: "Could not fetch your properties",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user?.id) fetchProperties();
+  }, [user?.id, toast]);
+
+  const handleDelete = async (propertyId: string) => {
+    if (!window.confirm("Are you sure you want to delete this property?")) return;
+
+    setDeleting(propertyId);
     try {
-      const { data } = await propertiesAPI.getByLandlord(user?.id || "");
-      setProperties(Array.isArray(data) ? data : data.properties || []);
-    } catch {
-      setProperties([]);
+      await propertiesAPI.delete(propertyId);
+      setProperties(properties.filter((p) => p._id !== propertyId));
+      toast({ title: "Property deleted successfully" });
+    } catch (err: any) {
+      toast({
+        title: "Failed to delete property",
+        description: err.response?.data?.message || "An error occurred",
+        variant: "destructive",
+      });
     } finally {
-      setLoading(false);
+      setDeleting(null);
     }
   };
 
-  useEffect(() => { fetchProperties(); }, [user]);
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this property?")) return;
-    try {
-      await propertiesAPI.delete(id);
-      toast({ title: "Property deleted" });
-      fetchProperties();
-    } catch {
-      toast({ title: "Failed to delete", variant: "destructive" });
-    }
-  };
+  if (loading) {
+    return (
+      <DashboardLayout title="My Properties" subtitle="Manage your rental properties">
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
-    <DashboardLayout title="My Properties" subtitle="Manage your property listings">
-      <div className="mb-6 flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{properties.length} properties</p>
-        <Button asChild className="gap-2">
-          <Link to="/landlord/properties/new"><Plus className="h-4 w-4" /> Add Property</Link>
+    <DashboardLayout title="My Properties" subtitle="Manage your rental properties">
+      <div className="mb-6 flex justify-between items-center">
+        <p className="text-sm text-muted-foreground">{properties.length} properties listed</p>
+        <Button asChild>
+          <Link to="/landlord/properties/new" className="gap-2">
+            <Plus className="h-4 w-4" /> Add Property
+          </Link>
         </Button>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-      ) : properties.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {properties.map((p) => (
-            <Card key={p._id}>
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <Badge className="mb-2">{p.type}</Badge>
-                    <h3 className="font-display text-lg font-semibold">{p.title}</h3>
-                    <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
-                      <MapPin className="h-3.5 w-3.5" /> {p.city}, {p.region}
+      {properties.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Building2 className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="font-display text-lg font-semibold mb-2">No Properties Yet</h3>
+            <p className="text-sm text-muted-foreground mb-4">Start by adding your first rental property</p>
+            <Button asChild>
+              <Link to="/landlord/properties/new">Add Your First Property</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {properties.map((property) => (
+            <Card key={property._id} className="overflow-hidden hover:shadow-lg transition-shadow">
+              {property.images?.[0] && (
+                <div className="aspect-video overflow-hidden bg-muted">
+                  <img src={property.images[0]} alt={property.title} className="h-full w-full object-cover" />
+                </div>
+              )}
+              <CardHeader>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1">
+                    <CardTitle className="font-display text-base line-clamp-2">{property.title}</CardTitle>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                      <MapPin className="h-3 w-3" />
+                      {property.city}, {property.region}
                     </div>
-                    <p className="mt-2 text-xs text-muted-foreground">{p.rooms?.length || 0} rooms</p>
                   </div>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" asChild>
-                      <Link to={`/landlord/properties/${p._id}/edit`}><Pencil className="h-4 w-4" /></Link>
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(p._id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                  <Badge variant="outline" className="capitalize">
+                    {property.type}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Rooms</p>
+                    <p className="font-semibold">{property.rooms?.length || 0}</p>
                   </div>
+                  <div>
+                    <p className="text-muted-foreground">Price Range</p>
+                    <p className="font-semibold text-xs">
+                      {property.rooms?.length
+                        ? `XAF ${Math.min(...property.rooms.map((r) => r.price)).toLocaleString()}`
+                        : "N/A"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button asChild size="sm" variant="outline" className="flex-1">
+                    <Link to={`/landlord/properties/${property._id}`}>View</Link>
+                  </Button>
+                  <Button asChild size="sm" variant="outline" className="flex-1">
+                    <Link to={`/landlord/properties/${property._id}/edit`} className="gap-1">
+                      <Edit2 className="h-3 w-3" /> Edit
+                    </Link>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => handleDelete(property._id)}
+                    disabled={deleting === property._id}
+                  >
+                    {deleting === property._id ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-3 w-3" />
+                    )}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
-      ) : (
-        <Card>
-          <CardContent className="flex flex-col items-center py-12">
-            <p className="text-muted-foreground">No properties yet.</p>
-            <Button asChild className="mt-4 gap-2">
-              <Link to="/landlord/properties/new"><Plus className="h-4 w-4" /> Add Your First Property</Link>
-            </Button>
-          </CardContent>
-        </Card>
       )}
     </DashboardLayout>
   );

@@ -75,7 +75,7 @@ export const propertiesAPI = {
 export const bookingsAPI = {
   create: (data: Record<string, unknown>) =>
     api.post("/bookings", data),
-  getByGuest: () =>
+  getByGuest: (p0: string) =>
     api.get("/bookings/guest"),
   getById: (id: string) =>
     api.get(`/bookings/${id}`),
@@ -111,7 +111,7 @@ export const invoicesAPI = {
 export const maintenanceAPI = {
   create: (data: Record<string, unknown>) =>
     api.post("/maintenance-tickets", data),
-  getByUser: () =>
+  getByUser: (p0: string) =>
     api.get("/maintenance-tickets/user"),
   getByRoom: (roomId: string) =>
     api.get(`/maintenance-tickets/room/${roomId}`),
@@ -125,7 +125,7 @@ export const maintenanceAPI = {
 export const visitsAPI = {
   create: (data: Record<string, unknown>) =>
     api.post("/visits", data),
-  getMyVisits: () =>
+  getMyVisits: (p0: string) =>
     api.get("/visits/my-visits"),
   getById: (id: string) =>
     api.get(`/visits/${id}`),

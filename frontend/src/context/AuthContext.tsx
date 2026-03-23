@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useState, useContext, ReactNode, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import type { User, UserRole } from "@/types";
