@@ -70,11 +70,6 @@ const Index = () => {
             animate="visible"
             variants={stagger}
           >
-            <motion.div variants={fadeUp}>
-              <Badge className="mb-4 bg-primary/20 text-primary border-primary/30 backdrop-blur-sm">
-                🇨🇲 #1 Rental Platform in Cameroon
-              </Badge>
-            </motion.div>
             <motion.h1
               variants={fadeUp}
               className="font-display text-4xl font-bold leading-tight text-background md:text-6xl"
@@ -91,7 +86,12 @@ const Index = () => {
                   <Search className="h-4 w-4" /> Browse Properties
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" asChild className="gap-2 text-base border-background/30 text-background hover:bg-background/10">
+              <Button 
+                size="lg" 
+                variant="outline" 
+                asChild 
+                className="gap-2 text-base border-background/30 text-foreground hover:bg-background/10"
+              >
                 <Link to="/register">
                   List Your Property <ArrowRight className="h-4 w-4" />
                 </Link>
