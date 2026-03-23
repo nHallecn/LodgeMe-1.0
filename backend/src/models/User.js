@@ -2,12 +2,16 @@ const pool = require("../config/db");
 
 class User {
   static async create(name, email, hashedPassword, role = "tenant") {
-    const [result] = await pool.execute(
-      "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",
-      [name, email, hashedPassword, role]
-    );
-    return result.insertId;
-  }
+  // Generate a unique openId if not provided
+  const openId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  const [result] = await pool.execute(
+    "INSERT INTO users (openId, name, email, password, role) VALUES (?, ?, ?, ?, ?)",
+    [openId, name, email, hashedPassword, role]
+  );
+  return result.insertId;
+}
+
 
   static async findByEmail(email) {
     const [rows] = await pool.execute("SELECT * FROM users WHERE email = ?", [email]);
