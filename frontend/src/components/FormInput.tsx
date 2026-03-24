@@ -1,50 +1,40 @@
+import React from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FieldError } from "react-hook-form";
 
-interface FormInputProps {
+interface FormInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
-  placeholder?: string;
-  type?: string;
   error?: FieldError;
-  required?: boolean;
-  disabled?: boolean;
-  value?: string;
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
-  name?: string;
 }
 
-export const FormInput = ({
-  label,
-  placeholder,
-  type = "text",
-  error,
-  required,
-  disabled,
-  value,
-  onChange,
-  onBlur,
-  name,
-}: FormInputProps) => {
-  return (
-    <div className="space-y-2">
-      <Label htmlFor={name}>
-        {label}
-        {required && <span className="text-destructive ml-1">*</span>}
-      </Label>
-      <Input
-        id={name}
-        name={name}
-        type={type}
-        placeholder={placeholder}
-        disabled={disabled}
-        value={value}
-        onChange={onChange}
-        onBlur={onBlur}
-        className={error ? "border-destructive" : ""}
-      />
-      {error && <p className="text-sm text-destructive">{error.message}</p>}
-    </div>
-  );
-};
+export const FormInput = React.forwardRef<HTMLInputElement, FormInputProps>(
+  ({ label, error, required, type = "text", id, name, className, ...props }, ref) => {
+    const inputId = id || name;
+
+    return (
+      <div className="space-y-2">
+        <Label htmlFor={inputId}>
+          {label}
+          {required && <span className="text-destructive ml-1">*</span>}
+        </Label>
+        <Input
+          {...props}
+          ref={ref}
+          id={inputId}
+          name={name}
+          type={type}
+          required={required}
+          className={`${error ? "border-destructive focus-visible:ring-destructive" : ""} ${className || ""}`}
+        />
+        {error && (
+          <p className="text-sm font-medium text-destructive">
+            {error.message || "Required"}
+          </p>
+        )}
+      </div>
+    );
+  }
+);
+
+FormInput.displayName = "FormInput";
