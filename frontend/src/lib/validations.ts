@@ -31,14 +31,32 @@ export type RegisterFormData = z.infer<typeof registerSchema>;
 // ============================================================================
 
 export const propertyCreateSchema = z.object({
-  name: z.string().min(3, "Property name must be at least 3 characters").max(255, "Property name must be less than 255 characters"),
-  city: z.string().min(2, "City must be at least 2 characters").max(100, "City must be less than 100 characters"),
-  neighborhood: z.string().min(2, "Neighborhood must be at least 2 characters").max(100, "Neighborhood must be less than 100 characters"),
-  latitude: z.number().optional(),
-  longitude: z.number().optional(),
-  description: z.string().min(10, "Description must be at least 10 characters").max(2000, "Description must be less than 2000 characters"),
-  totalRooms: z.number().int().min(1, "Must have at least 1 room").max(500, "Cannot exceed 500 rooms"),
-  amenities: z.array(z.string()).optional(),
+  name: z.string().min(3).max(255),
+  city: z.string().min(2).max(100),
+  neighborhood: z.string().min(2).max(100),
+  // Preprocess: coerce string → number for numeric inputs
+  latitude: z.preprocess(
+    (val) => (val === "" || val === undefined ? undefined : Number(val)),
+    z.number().optional()
+  ),
+  longitude: z.preprocess(
+    (val) => (val === "" || val === undefined ? undefined : Number(val)),
+    z.number().optional()
+  ),
+  totalRooms: z.preprocess(
+    (val) => (val === "" ? undefined : Number(val)),
+    z.number().int().min(1, "Must have at least 1 room").max(500)
+  ),
+  description: z.string().min(10).max(2000),
+  // Preprocess: coerce comma string → array
+  amenities: z.preprocess(
+    (val) => {
+      if (Array.isArray(val)) return val;
+      if (typeof val === "string") return val.split(",").map((a) => a.trim()).filter(Boolean);
+      return [];
+    },
+    z.array(z.string()).optional()
+  ),
 });
 
 export type PropertyCreateFormData = z.infer<typeof propertyCreateSchema>;
