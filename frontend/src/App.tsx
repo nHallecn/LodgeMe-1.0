@@ -12,7 +12,7 @@ import PropertiesPage from "./pages/PropertiesPage";
 import PropertyDetailPage from "./pages/PropertyDetailPage";
 import LandlordDashboard from "./pages/landlord/LandlordDashboard";
 import LandlordProperties from "./pages/landlord/LandlordProperties";
-import NewProperty from "./pages/landlord/NewProperty";
+import NewProperty from "./pages/landlord/NewPropertyForm";
 import TenantDashboard from "./pages/tenant/TenantDashboard";
 import TenantBookings from "./pages/tenant/TenantBookings";
 import TenantPayments from "./pages/tenant/TenantPayments";

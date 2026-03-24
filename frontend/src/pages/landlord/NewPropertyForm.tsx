@@ -10,7 +10,6 @@ import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { FormInput } from "@/components/FormInput";
 import { FormTextarea } from "@/components/FormTextarea";
-import { FormSelect } from "@/components/FormSelect";
 import { propertyCreateSchema, type PropertyCreateFormData } from "@/lib/validations";
 
 const NewPropertyForm = () => {
@@ -20,7 +19,6 @@ const NewPropertyForm = () => {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-    watch,
   } = useForm<PropertyCreateFormData>({
     resolver: zodResolver(propertyCreateSchema),
   });
@@ -47,15 +45,6 @@ const NewPropertyForm = () => {
       });
     }
   };
-
-  const propertyTypes = [
-    { value: "apartment", label: "Apartment" },
-    { value: "minicite", label: "Minicité" },
-    { value: "studio", label: "Studio" },
-    { value: "villa", label: "Villa" },
-    { value: "house", label: "House" },
-    { value: "room", label: "Room" },
-  ];
 
   return (
     <DashboardLayout title="Add New Property" subtitle="List a new property on LodgeMe">
@@ -89,6 +78,7 @@ const NewPropertyForm = () => {
                     required
                     {...register("city")}
                   />
+                  <span className="sr-only">Neighborhood</span>
                   <FormInput
                     label="Neighborhood"
                     placeholder="e.g. Littoral"
@@ -103,14 +93,14 @@ const NewPropertyForm = () => {
                     placeholder="e.g. 4.0511"
                     type="number"
                     error={errors.latitude}
-                    {...register("latitude", { valueAsNumber: true })}
+                    {...register("latitude")}
                   />
                   <FormInput
                     label="Longitude (Optional)"
                     placeholder="e.g. 9.7679"
                     type="number"
                     error={errors.longitude}
-                    {...register("longitude", { valueAsNumber: true })}
+                    {...register("longitude")}
                   />
                 </div>
                 <FormInput
@@ -119,15 +109,13 @@ const NewPropertyForm = () => {
                   type="number"
                   error={errors.totalRooms}
                   required
-                  {...register("totalRooms", { valueAsNumber: true })}
+                  {...register("totalRooms")}
                 />
                 <FormInput
                   label="Amenities (comma separated)"
                   placeholder="e.g. WiFi, Parking, Security, Water Tank"
-                  error={errors.amenities}
-                  {...register("amenities", {
-                    setValueAs: (value) => value.split(",").map((a: string) => a.trim()).filter(Boolean),
-                  })}
+                  error={errors.amenities as any}
+                  {...register("amenities")}
                 />
                 <div className="flex gap-3 pt-2">
                   <Button type="submit" disabled={isSubmitting}>
