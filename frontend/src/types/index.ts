@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Key, ReactNode } from "react";
+
 export type UserRole = "landlord" | "tenant" | "admin";
 
 export interface User {
@@ -9,6 +12,8 @@ export interface User {
 }
 
 export interface Property {
+  [x: string]: ReactNode;
+  id: string | number;
   _id: string;
   title: string;
   description: string;
@@ -37,6 +42,11 @@ export interface Room {
 }
 
 export interface Booking {
+  id: number;
+  startDate: string | number | Date;
+  endDate: string;
+  guestId: ReactNode;
+  roomId: ReactNode;
   _id: string;
   guest: string | User;
   room: string | Room;
@@ -49,6 +59,13 @@ export interface Booking {
 }
 
 export interface Payment {
+  id: Key;
+  bookingId: ReactNode;
+  paymentMethod: ReactNode;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  receiptNumber: any;
+  notes: any;
+  paymentDate: string | number | Date;
   _id: string;
   booking: string | Booking;
   amount: number;
@@ -59,6 +76,9 @@ export interface Payment {
 }
 
 export interface Invoice {
+  id: number;
+  bookingId: ReactNode;
+  tenantId: ReactNode;
   _id: string;
   booking: string | Booking;
   tenant: string | User;
@@ -70,6 +90,9 @@ export interface Invoice {
 }
 
 export interface MaintenanceTicket {
+  id: number;
+  roomId: ReactNode;
+  userId: ReactNode;
   _id: string;
   room: string | Room;
   user: string | User;

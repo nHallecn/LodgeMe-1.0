@@ -1,36 +1,41 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { invoicesAPI } from "@/lib/api";
+import { Invoice } from "@/types";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileText, Plus, Loader2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Invoice } from "@/types";
 
 const LandlordInvoices = () => {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ total: 0, unpaid: 0, overdue: 0, paid: 0 });
+  const [updating, setUpdating] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchInvoices = async () => {
       try {
-        const response = await invoicesAPI.getByLandlord();
+        if (!user?.id) return;
+        const response = await invoicesAPI.getByLandlord(user.id);
         const data = Array.isArray(response.data) ? response.data : response.data.invoices || [];
         setInvoices(data);
 
         // Calculate stats
-        const total = data.reduce((sum: number, inv: Invoice) => sum + inv.amount, 0);
+        const total = data.reduce((sum: number, inv: Invoice) => sum + (inv.amount || 0), 0);
         const unpaid = data.filter((inv: Invoice) => inv.status === "unpaid").length;
         const overdue = data.filter((inv: Invoice) => inv.status === "overdue").length;
         const paid = data.filter((inv: Invoice) => inv.status === "paid").length;
         setStats({ total, unpaid, overdue, paid });
-      } catch (err) {
+      } catch (err: any) {
         toast({
           title: "Failed to load invoices",
-          description: "Could not fetch invoice records",
+          description: err.response?.data?.message || "Could not fetch invoice records",
           variant: "destructive",
         });
       } finally {
@@ -38,8 +43,25 @@ const LandlordInvoices = () => {
       }
     };
 
-    fetchInvoices();
-  }, [toast]);
+    if (user?.id) fetchInvoices();
+  }, [user?.id, toast]);
+
+  const handleStatusUpdate = async (invoiceId: number, newStatus: string) => {
+    setUpdating(invoiceId);
+    try {
+      await invoicesAPI.updateStatus(invoiceId, newStatus);
+      setInvoices(invoices.map((i) => (i.id === invoiceId ? { ...i, status: newStatus as any } : i)));
+      toast({ title: `Invoice marked as ${newStatus}` });
+    } catch (err: any) {
+      toast({
+        title: "Failed to update invoice",
+        description: err.response?.data?.message || "An error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdating(null);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -131,39 +153,53 @@ const LandlordInvoices = () => {
               <p className="text-muted-foreground">No invoices created yet</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-4">Booking ID</th>
-                    <th className="text-left py-3 px-4">Tenant</th>
-                    <th className="text-left py-3 px-4">Amount</th>
-                    <th className="text-left py-3 px-4">Status</th>
-                    <th className="text-left py-3 px-4">Due Date</th>
-                    <th className="text-left py-3 px-4">Created</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {invoices.map((invoice) => (
-                    <tr key={invoice._id} className="border-b hover:bg-muted/50">
-                      <td className="py-3 px-4">{typeof invoice.booking === "string" ? invoice.booking : invoice.booking?._id}</td>
-                      <td className="py-3 px-4">{typeof invoice.tenant === "string" ? invoice.tenant : invoice.tenant?.name}</td>
-                      <td className="py-3 px-4 font-semibold">XAF {invoice.amount.toLocaleString()}</td>
-                      <td className="py-3 px-4">
-                        <Badge className={getStatusColor(invoice.status)} variant="outline">
-                          {invoice.status}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4 text-muted-foreground">
-                        {new Date(invoice.dueDate).toLocaleDateString()}
-                      </td>
-                      <td className="py-3 px-4 text-muted-foreground text-xs">
-                        {new Date(invoice.createdAt).toLocaleDateString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="space-y-4">
+              {invoices.map((invoice) => (
+                <div key={invoice.id} className="flex items-start justify-between p-4 border rounded-lg hover:bg-muted/50">
+                  <div className="flex-1">
+                    <p className="font-semibold">Invoice #{invoice.id}</p>
+                    <p className="text-sm text-muted-foreground">Booking: {invoice.bookingId}</p>
+                    <p className="text-sm text-muted-foreground">Tenant: {invoice.tenantId}</p>
+                    <p className="text-sm text-muted-foreground">Due: {new Date(invoice.dueDate).toLocaleDateString()}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-lg">XAF {invoice.amount.toLocaleString()}</p>
+                    <Badge className={getStatusColor(invoice.status)} variant="outline" className="mt-2">
+                      {invoice.status}
+                    </Badge>
+                    <div className="mt-3 flex gap-2">
+                      {invoice.status === "unpaid" && (
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() => handleStatusUpdate(invoice.id, "paid")}
+                            disabled={updating === invoice.id}
+                          >
+                            {updating === invoice.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Mark Paid"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleStatusUpdate(invoice.id, "overdue")}
+                            disabled={updating === invoice.id}
+                          >
+                            Overdue
+                          </Button>
+                        </>
+                      )}
+                      {invoice.status === "overdue" && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleStatusUpdate(invoice.id, "paid")}
+                          disabled={updating === invoice.id}
+                        >
+                          {updating === invoice.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Mark Paid"}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </CardContent>

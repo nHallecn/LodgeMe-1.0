@@ -1,23 +1,28 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { maintenanceAPI } from "@/lib/api";
+import { MaintenanceTicket } from "@/types";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Wrench, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { MaintenanceTicket } from "@/types";
 
 const LandlordMaintenance = () => {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [tickets, setTickets] = useState<MaintenanceTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ total: 0, open: 0, inProgress: 0, resolved: 0 });
+  const [updating, setUpdating] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchTickets = async () => {
       try {
-        const response = await maintenanceAPI.getAll();
+        if (!user?.id) return;
+        const response = await maintenanceAPI.getByUser(user.id);
         const data = Array.isArray(response.data) ? response.data : response.data.tickets || [];
         setTickets(data);
 
@@ -27,10 +32,10 @@ const LandlordMaintenance = () => {
         const inProgress = data.filter((t: MaintenanceTicket) => t.status === "in_progress").length;
         const resolved = data.filter((t: MaintenanceTicket) => t.status === "resolved").length;
         setStats({ total, open, inProgress, resolved });
-      } catch (err) {
+      } catch (err: any) {
         toast({
           title: "Failed to load maintenance tickets",
-          description: "Could not fetch maintenance records",
+          description: err.response?.data?.message || "Could not fetch maintenance records",
           variant: "destructive",
         });
       } finally {
@@ -38,8 +43,25 @@ const LandlordMaintenance = () => {
       }
     };
 
-    fetchTickets();
-  }, [toast]);
+    if (user?.id) fetchTickets();
+  }, [user?.id, toast]);
+
+  const handleStatusUpdate = async (ticketId: number, newStatus: string) => {
+    setUpdating(ticketId);
+    try {
+      await maintenanceAPI.update(ticketId, { status: newStatus });
+      setTickets(tickets.map((t) => (t.id === ticketId ? { ...t, status: newStatus as any } : t)));
+      toast({ title: `Ticket updated to ${newStatus}` });
+    } catch (err: any) {
+      toast({
+        title: "Failed to update ticket",
+        description: err.response?.data?.message || "An error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdating(null);
+    }
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -145,7 +167,7 @@ const LandlordMaintenance = () => {
           ) : (
             <div className="space-y-3">
               {tickets.map((ticket) => (
-                <div key={ticket._id} className="border rounded-lg p-4 hover:bg-muted/50 transition">
+                <div key={ticket.id} className="border rounded-lg p-4 hover:bg-muted/50 transition">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
@@ -156,14 +178,46 @@ const LandlordMaintenance = () => {
                       </div>
                       <p className="text-sm text-muted-foreground mb-2">{ticket.description}</p>
                       <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span>Room: {typeof ticket.room === "string" ? ticket.room : ticket.room?._id}</span>
-                        <span>Reported by: {typeof ticket.user === "string" ? ticket.user : ticket.user?.name}</span>
+                        <span>Room: {ticket.roomId}</span>
+                        <span>Reported by: User {ticket.userId}</span>
                         <span>{new Date(ticket.createdAt).toLocaleDateString()}</span>
                       </div>
                     </div>
-                    <Badge className={getStatusColor(ticket.status)} variant="outline">
-                      {ticket.status.replace("_", " ")}
-                    </Badge>
+                    <div className="flex flex-col items-end gap-2">
+                      <Badge className={getStatusColor(ticket.status)} variant="outline">
+                        {ticket.status.replace("_", " ")}
+                      </Badge>
+                      <div className="flex gap-1">
+                        {ticket.status === "open" && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleStatusUpdate(ticket.id, "in_progress")}
+                            disabled={updating === ticket.id}
+                          >
+                            {updating === ticket.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Start"}
+                          </Button>
+                        )}
+                        {ticket.status === "in_progress" && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleStatusUpdate(ticket.id, "resolved")}
+                            disabled={updating === ticket.id}
+                          >
+                            {updating === ticket.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Resolve"}
+                          </Button>
+                        )}
+                        {ticket.status !== "closed" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleStatusUpdate(ticket.id, "closed")}
+                            disabled={updating === ticket.id}
+                          >
+                            Close
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
