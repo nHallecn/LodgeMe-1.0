@@ -1,21 +1,233 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
-import { propertiesAPI } from "@/lib/api";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { propertiesAPI, bookingsAPI, visitsAPI } from "@/lib/api";
 import { Property, Room } from "@/types";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Bed, Bath, Star, ArrowLeft, Loader2, CheckCircle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { MapPin, Star, ArrowLeft, Loader2, CheckCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
+// ── Book This Room modal ────────────────────────────────────────────────────
+interface BookRoomModalProps {
+  room: Room;
+  propertyTitle: string;
+  open: boolean;
+  onClose: () => void;
+}
+
+const BookRoomModal = ({ room, propertyTitle, open, onClose }: BookRoomModalProps) => {
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!startDate) {
+      toast({ title: "Please select a move-in date", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    try {
+      await bookingsAPI.create({
+        roomId: room._id,
+        startDate,
+        endDate: endDate || null,
+      });
+      toast({
+        title: "Booking request sent!",
+        description: "Your booking has been submitted. The landlord will confirm shortly.",
+      });
+      onClose();
+      navigate("/tenant/bookings");
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      toast({
+        title: "Booking failed",
+        description: error.response?.data?.message || "Could not submit booking. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="font-display">Book Room {room.roomNumber}</DialogTitle>
+          <DialogDescription>{propertyTitle}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="rounded-lg bg-secondary p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground capitalize">{room.type} room</p>
+              <p className="font-display text-lg font-bold text-primary">
+                XAF {room.price.toLocaleString()}<span className="text-xs font-normal text-muted-foreground">/month</span>
+              </p>
+            </div>
+            <Badge>Room {room.roomNumber}</Badge>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="startDate">Move-in Date <span className="text-destructive">*</span></Label>
+            <Input
+              id="startDate"
+              type="date"
+              value={startDate}
+              min={new Date().toISOString().split("T")[0]}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="endDate">
+              Move-out Date <span className="text-xs text-muted-foreground">(optional — leave blank for open-ended)</span>
+            </Label>
+            <Input
+              id="endDate"
+              type="date"
+              value={endDate}
+              min={startDate || new Date().toISOString().split("T")[0]}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </div>
+        </div>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose} disabled={loading}>Cancel</Button>
+          <Button onClick={handleSubmit} disabled={loading} className="gap-2">
+            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+            Confirm Booking
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// ── Request a Visit modal ───────────────────────────────────────────────────
+interface VisitModalProps {
+  propertyId: string;
+  propertyTitle: string;
+  open: boolean;
+  onClose: () => void;
+}
+
+const VisitModal = ({ propertyId, propertyTitle, open, onClose }: VisitModalProps) => {
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  const [notes, setNotes] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!date || !time) {
+      toast({ title: "Please select a date and time for your visit", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    try {
+      await visitsAPI.create({
+        propertyId,
+        requestedDate: date,
+        requestedTime: time,
+        notes,
+      });
+      toast({
+        title: "Visit request sent!",
+        description: "The landlord will review your request and get back to you.",
+      });
+      onClose();
+      navigate("/tenant/visits");
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      toast({
+        title: "Failed to send visit request",
+        description: error.response?.data?.message || "Could not submit request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="font-display">Request a Visit</DialogTitle>
+          <DialogDescription>{propertyTitle}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label htmlFor="visitDate">Preferred Date <span className="text-destructive">*</span></Label>
+            <Input
+              id="visitDate"
+              type="date"
+              value={date}
+              min={new Date().toISOString().split("T")[0]}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="visitTime">Preferred Time <span className="text-destructive">*</span></Label>
+            <Input
+              id="visitTime"
+              type="time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="visitNotes">
+              Additional Notes <span className="text-xs text-muted-foreground">(optional)</span>
+            </Label>
+            <Textarea
+              id="visitNotes"
+              placeholder="e.g. I'm interested in a 2-room unit, coming with my family..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+            />
+          </div>
+        </div>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose} disabled={loading}>Cancel</Button>
+          <Button onClick={handleSubmit} disabled={loading} className="gap-2">
+            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+            Send Request
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// ── Main page ───────────────────────────────────────────────────────────────
 const PropertyDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const [property, setProperty] = useState<Property | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
-  const { isAuthenticated } = useAuth();
+  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [bookModalOpen, setBookModalOpen] = useState(false);
+  const [visitModalOpen, setVisitModalOpen] = useState(false);
+  const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -52,9 +264,7 @@ const PropertyDetailPage = () => {
         <Navbar />
         <div className="container mx-auto px-4 py-20 text-center">
           <h2 className="font-display text-2xl font-bold">Property Not Found</h2>
-          <Button asChild className="mt-4">
-            <Link to="/properties">Back to Properties</Link>
-          </Button>
+          <Button asChild className="mt-4"><Link to="/properties">Back to Properties</Link></Button>
         </div>
         <Footer />
       </div>
@@ -83,11 +293,7 @@ const PropertyDetailPage = () => {
           <div className="grid grid-cols-2 gap-4">
             {(property.images?.slice(1, 5) || [null, null, null, null]).map((img, i) => (
               <div key={i} className="aspect-square overflow-hidden rounded-xl bg-muted">
-                {img ? (
-                  <img src={img} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full items-center justify-center bg-secondary" />
-                )}
+                {img ? <img src={img} alt="" className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center bg-secondary" />}
               </div>
             ))}
           </div>
@@ -149,8 +355,15 @@ const PropertyDetailPage = () => {
                         <p className="font-display text-xl font-bold text-primary">
                           XAF {room.price.toLocaleString()}<span className="text-xs font-normal text-muted-foreground">/month</span>
                         </p>
-                        {room.isAvailable && isAuthenticated && (
-                          <Button size="sm" className="mt-3 w-full">Book This Room</Button>
+                        {room.isAvailable && isAuthenticated && user?.role === "tenant" && (
+                          <Button size="sm" className="mt-3 w-full" onClick={() => { setSelectedRoom(room); setBookModalOpen(true); }}>
+                            Book This Room
+                          </Button>
+                        )}
+                        {room.isAvailable && !isAuthenticated && (
+                          <Button size="sm" variant="outline" className="mt-3 w-full" asChild>
+                            <Link to="/login">Sign in to Book</Link>
+                          </Button>
                         )}
                       </CardContent>
                     </Card>
@@ -168,19 +381,25 @@ const PropertyDetailPage = () => {
               <CardContent className="p-6 space-y-4">
                 <h3 className="font-display text-lg font-semibold">Interested?</h3>
                 {isAuthenticated ? (
-                  <>
-                    <Button className="w-full">Request a Visit</Button>
-                    <Button variant="outline" className="w-full">Contact Landlord</Button>
-                  </>
+                  user?.role === "tenant" ? (
+                    <>
+                      <Button className="w-full" onClick={() => setVisitModalOpen(true)}>
+                        Request a Visit
+                      </Button>
+                      <p className="text-xs text-center text-muted-foreground">
+                        Or book a specific room directly above
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Only tenants can book rooms or request visits.
+                    </p>
+                  )
                 ) : (
                   <>
                     <p className="text-sm text-muted-foreground">Sign in to book a room or request a visit.</p>
-                    <Button className="w-full" asChild>
-                      <Link to="/login">Sign In</Link>
-                    </Button>
-                    <Button variant="outline" className="w-full" asChild>
-                      <Link to="/register">Create Account</Link>
-                    </Button>
+                    <Button className="w-full" asChild><Link to="/login">Sign In</Link></Button>
+                    <Button variant="outline" className="w-full" asChild><Link to="/register">Create Account</Link></Button>
                   </>
                 )}
               </CardContent>
@@ -188,6 +407,25 @@ const PropertyDetailPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Booking modal */}
+      {selectedRoom && (
+        <BookRoomModal
+          room={selectedRoom}
+          propertyTitle={property.title}
+          open={bookModalOpen}
+          onClose={() => { setBookModalOpen(false); setSelectedRoom(null); }}
+        />
+      )}
+
+      {/* Visit request modal */}
+      <VisitModal
+        propertyId={property._id}
+        propertyTitle={property.title}
+        open={visitModalOpen}
+        onClose={() => setVisitModalOpen(false)}
+      />
+
       <Footer />
     </div>
   );
