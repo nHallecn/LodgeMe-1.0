@@ -18,7 +18,7 @@ const TenantPayments = () => {
   useEffect(() => {
     const fetchPayments = async () => {
       try {
-        const response = await paymentsAPI.getByGuest(user?.id || "");
+        const response = await paymentsAPI.getByGuest();
         const data = Array.isArray(response.data) ? response.data : response.data.payments || [];
         setPayments(data);
 
