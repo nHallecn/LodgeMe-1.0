@@ -1,50 +1,38 @@
+import React from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { FieldError } from "react-hook-form";
 
-interface FormTextareaProps {
+interface FormTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label: string;
-  placeholder?: string;
   error?: FieldError;
-  required?: boolean;
-  disabled?: boolean;
-  rows?: number;
-  value?: string;
-  onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  onBlur?: (e: React.FocusEvent<HTMLTextAreaElement>) => void;
-  name?: string;
 }
 
-export const FormTextarea = ({
-  label,
-  placeholder,
-  error,
-  required,
-  disabled,
-  rows = 4,
-  value,
-  onChange,
-  onBlur,
-  name,
-}: FormTextareaProps) => {
-  return (
-    <div className="space-y-2">
-      <Label htmlFor={name}>
-        {label}
-        {required && <span className="text-destructive ml-1">*</span>}
-      </Label>
-      <Textarea
-        id={name}
-        name={name}
-        placeholder={placeholder}
-        disabled={disabled}
-        rows={rows}
-        value={value}
-        onChange={onChange}
-        onBlur={onBlur}
-        className={error ? "border-destructive" : ""}
-      />
-      {error && <p className="text-sm text-destructive">{error.message}</p>}
-    </div>
-  );
-};
+export const FormTextarea = React.forwardRef<HTMLTextAreaElement, FormTextareaProps>(
+  ({ label, error, required, id, name, className, ...props }, ref) => {
+    const textareaId = id || name;
+
+    return (
+      <div className="space-y-2">
+        <Label htmlFor={textareaId}>
+          {label}
+          {required && <span className="text-destructive ml-1">*</span>}
+        </Label>
+        <Textarea
+          {...props}
+          ref={ref}
+          id={textareaId}
+          name={name}
+          className={`${error ? "border-destructive focus-visible:ring-destructive" : ""} ${className || ""}`}
+        />
+        {error && (
+          <p className="text-sm font-medium text-destructive">
+            {error.message || "Required"}
+          </p>
+        )}
+      </div>
+    );
+  }
+);
+
+FormTextarea.displayName = "FormTextarea";

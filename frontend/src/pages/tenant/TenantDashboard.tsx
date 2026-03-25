@@ -2,31 +2,39 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { bookingsAPI, paymentsAPI, maintenanceAPI, visitsAPI } from "@/lib/api";
+import { Booking, Payment, MaintenanceTicket, VisitRequest } from "@/types";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, CreditCard, Wrench, Users, AlertCircle, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar, DollarSign, Wrench, Users, ArrowRight, Loader2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Booking, Payment, MaintenanceTicket, VisitRequest } from "@/types";
 
 const TenantDashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [tickets, setTickets] = useState<MaintenanceTicket[]>([]);
   const [visits, setVisits] = useState<VisitRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    activeBookings: 0,
+    totalPayments: 0,
+    pendingMaintenance: 0,
+    pendingVisits: 0,
+  });
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchDashboardData = async () => {
       try {
+        if (!user?.id) return;
+
         const [bookingsRes, paymentsRes, ticketsRes, visitsRes] = await Promise.all([
-          bookingsAPI.getByGuest(user?.id || "").catch(() => ({ data: [] })),
-          paymentsAPI.getByGuest(user?.id || "").catch(() => ({ data: [] })),
-          maintenanceAPI.getByUser(user?.id || "").catch(() => ({ data: [] })),
-          visitsAPI.getMyVisits(user?.id || "").catch(() => ({ data: [] })),
+          bookingsAPI.getByGuest(user.id),
+          paymentsAPI.getByGuest(user.id),
+          maintenanceAPI.getByUser(user.id),
+          visitsAPI.getMyVisits(user.id),
         ]);
 
         const bookingsData = Array.isArray(bookingsRes.data) ? bookingsRes.data : bookingsRes.data.bookings || [];
@@ -38,10 +46,21 @@ const TenantDashboard = () => {
         setPayments(paymentsData);
         setTickets(ticketsData);
         setVisits(visitsData);
-      } catch (err) {
+
+        const activeBookings = bookingsData.filter((b: Booking) => b.status === "active").length;
+        const pendingMaintenance = ticketsData.filter((t: MaintenanceTicket) => t.status === "open" || t.status === "in_progress").length;
+        const pendingVisits = visitsData.filter((v: VisitRequest) => v.status === "pending").length;
+
+        setStats({
+          activeBookings,
+          totalPayments: paymentsData.length,
+          pendingMaintenance,
+          pendingVisits,
+        });
+      } catch (err: any) {
         toast({
           title: "Failed to load dashboard",
-          description: "Could not fetch your information",
+          description: err.response?.data?.message || "Could not fetch dashboard data",
           variant: "destructive",
         });
       } finally {
@@ -49,17 +68,12 @@ const TenantDashboard = () => {
       }
     };
 
-    if (user?.id) fetchData();
+    if (user?.id) fetchDashboardData();
   }, [user?.id, toast]);
-
-  const activeBooking = bookings.find((b) => b.status === "active" || b.status === "confirmed");
-  const pendingPayments = payments.filter((p) => p.status === "pending");
-  const openTickets = tickets.filter((t) => t.status === "open" || t.status === "in_progress");
-  const pendingVisits = visits.filter((v) => v.status === "pending");
 
   if (loading) {
     return (
-      <DashboardLayout title="Dashboard" subtitle={`Welcome back, ${user?.name || "Tenant"}`}>
+      <DashboardLayout title="Dashboard" subtitle="Welcome to your tenant dashboard">
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -68,8 +82,8 @@ const TenantDashboard = () => {
   }
 
   return (
-    <DashboardLayout title="Dashboard" subtitle={`Welcome back, ${user?.name || "Tenant"}`}>
-      {/* Quick Stats */}
+    <DashboardLayout title="Dashboard" subtitle="Welcome to your tenant dashboard">
+      {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4 mb-6">
         <Card>
           <CardContent className="flex items-center gap-4 p-6">
@@ -77,19 +91,19 @@ const TenantDashboard = () => {
               <Calendar className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Active Rental</p>
-              <p className="font-display text-2xl font-bold">{bookings.filter((b) => b.status === "active" || b.status === "confirmed").length}</p>
+              <p className="text-sm text-muted-foreground">Active Bookings</p>
+              <p className="font-display text-2xl font-bold">{stats.activeBookings}</p>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="flex items-center gap-4 p-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-yellow-100">
-              <CreditCard className="h-6 w-6 text-yellow-600" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-100">
+              <DollarSign className="h-6 w-6 text-green-600" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Pending Payments</p>
-              <p className="font-display text-2xl font-bold">{pendingPayments.length}</p>
+              <p className="text-sm text-muted-foreground">Payments Made</p>
+              <p className="font-display text-2xl font-bold">{stats.totalPayments}</p>
             </div>
           </CardContent>
         </Card>
@@ -99,8 +113,8 @@ const TenantDashboard = () => {
               <Wrench className="h-6 w-6 text-orange-600" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Open Requests</p>
-              <p className="font-display text-2xl font-bold">{openTickets.length}</p>
+              <p className="text-sm text-muted-foreground">Pending Maintenance</p>
+              <p className="font-display text-2xl font-bold">{stats.pendingMaintenance}</p>
             </div>
           </CardContent>
         </Card>
@@ -110,91 +124,76 @@ const TenantDashboard = () => {
               <Users className="h-6 w-6 text-purple-600" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Visit Requests</p>
-              <p className="font-display text-2xl font-bold">{pendingVisits.length}</p>
+              <p className="text-sm text-muted-foreground">Pending Visits</p>
+              <p className="font-display text-2xl font-bold">{stats.pendingVisits}</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Current Rental */}
-      {activeBooking && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="font-display">Current Rental</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-sm text-muted-foreground">Room</p>
-                  <p className="font-semibold">{typeof activeBooking.room === "string" ? activeBooking.room : activeBooking.room?.roomNumber}</p>
-                </div>
-                <Badge>{activeBooking.status}</Badge>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Check-in</p>
-                  <p className="font-semibold">{new Date(activeBooking.checkIn).toLocaleDateString()}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Check-out</p>
-                  <p className="font-semibold">{activeBooking.checkOut ? new Date(activeBooking.checkOut).toLocaleDateString() : "Ongoing"}</p>
-                </div>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Monthly Rent</p>
-                <p className="font-display text-xl font-bold">XAF {activeBooking.totalPrice.toLocaleString()}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Pending Payments Alert */}
-      {pendingPayments.length > 0 && (
-        <Card className="mb-6 border-yellow-200 bg-yellow-50">
-          <CardHeader>
-            <CardTitle className="font-display flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-yellow-600" />
-              Payments Due
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <p className="text-sm">You have {pendingPayments.length} pending payment(s)</p>
-              <div className="flex gap-2">
-                <Button asChild>
-                  <Link to="/tenant/payments">View Payments</Link>
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Recent Activity */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Recent Bookings */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Active Bookings */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="font-display">Recent Bookings</CardTitle>
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/tenant/bookings">View All</Link>
+            <CardTitle className="font-display">Your Bookings</CardTitle>
+            <Button asChild size="sm" variant="ghost">
+              <Link to="/tenant/bookings" className="gap-1">
+                View All <ArrowRight className="h-3 w-3" />
+              </Link>
             </Button>
           </CardHeader>
           <CardContent>
             {bookings.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4">No bookings yet</p>
+              <div className="text-center py-6">
+                <p className="text-sm text-muted-foreground mb-4">No bookings yet</p>
+                <Button asChild size="sm">
+                  <Link to="/properties" className="gap-1">
+                    <Plus className="h-3 w-3" /> Browse Properties
+                  </Link>
+                </Button>
+              </div>
             ) : (
               <div className="space-y-3">
                 {bookings.slice(0, 3).map((booking) => (
-                  <div key={booking._id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div key={booking.id} className="flex items-start justify-between p-3 border rounded-lg">
                     <div>
-                      <p className="font-semibold text-sm">{typeof booking.room === "string" ? booking.room : booking.room?.roomNumber}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(booking.checkIn).toLocaleDateString()}</p>
+                      <p className="font-medium text-sm">Booking #{booking.id}</p>
+                      <p className="text-xs text-muted-foreground">Room {booking.roomId}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{new Date(booking.startDate).toLocaleDateString()}</p>
                     </div>
-                    <Badge variant="outline">{booking.status}</Badge>
+                    <Badge variant={booking.status === "active" ? "default" : "outline"}>
+                      {booking.status}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Recent Payments */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="font-display">Payment History</CardTitle>
+            <Button asChild size="sm" variant="ghost">
+              <Link to="/tenant/payments" className="gap-1">
+                View All <ArrowRight className="h-3 w-3" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {payments.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">No payments yet</p>
+            ) : (
+              <div className="space-y-3">
+                {payments.slice(0, 3).map((payment) => (
+                  <div key={payment.id} className="flex items-start justify-between p-3 border rounded-lg">
+                    <div>
+                      <p className="font-medium text-sm">Payment #{payment.id}</p>
+                      <p className="text-xs text-muted-foreground">{payment.paymentMethod}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{new Date(payment.paymentDate).toLocaleDateString()}</p>
+                    </div>
+                    <p className="font-semibold text-sm">XAF {payment.amount.toLocaleString()}</p>
                   </div>
                 ))}
               </div>
@@ -206,23 +205,58 @@ const TenantDashboard = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="font-display">Maintenance Requests</CardTitle>
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/tenant/maintenance">View All</Link>
+            <Button asChild size="sm" variant="ghost">
+              <Link to="/tenant/maintenance" className="gap-1">
+                View All <ArrowRight className="h-3 w-3" />
+              </Link>
             </Button>
           </CardHeader>
           <CardContent>
             {tickets.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4">No requests yet</p>
+              <p className="text-sm text-muted-foreground text-center py-6">No maintenance requests</p>
             ) : (
               <div className="space-y-3">
                 {tickets.slice(0, 3).map((ticket) => (
-                  <div key={ticket._id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div key={ticket.id} className="flex items-start justify-between p-3 border rounded-lg">
                     <div>
-                      <p className="font-semibold text-sm line-clamp-1">{ticket.title}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(ticket.createdAt).toLocaleDateString()}</p>
+                      <p className="font-medium text-sm">{ticket.title}</p>
+                      <p className="text-xs text-muted-foreground">Room {ticket.roomId}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{new Date(ticket.createdAt).toLocaleDateString()}</p>
                     </div>
-                    <Badge variant="outline" className="capitalize">
-                      {ticket.status.replace("_", " ")}
+                    <Badge variant={ticket.priority === "urgent" ? "destructive" : "outline"}>
+                      {ticket.priority}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Visit Requests */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="font-display">Visit Requests</CardTitle>
+            <Button asChild size="sm" variant="ghost">
+              <Link to="/tenant/visits" className="gap-1">
+                View All <ArrowRight className="h-3 w-3" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {visits.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">No visit requests</p>
+            ) : (
+              <div className="space-y-3">
+                {visits.slice(0, 3).map((visit) => (
+                  <div key={visit.id} className="flex items-start justify-between p-3 border rounded-lg">
+                    <div>
+                      <p className="font-medium text-sm">Visit Request #{visit.id}</p>
+                      <p className="text-xs text-muted-foreground">Property {visit.propertyId}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{new Date(visit.requestedDate).toLocaleDateString()}</p>
+                    </div>
+                    <Badge variant={visit.status === "confirmed" ? "default" : "outline"}>
+                      {visit.status}
                     </Badge>
                   </div>
                 ))}
