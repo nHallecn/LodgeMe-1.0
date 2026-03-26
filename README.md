@@ -40,7 +40,7 @@ LodgeMe is a modern, high-end rental marketplace designed specifically for the C
 ### 1\. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/lodgeme-project.git
+git clone https://github.com/nHallecn/LodgeMe-1.0
 cd lodgeme-project
 ```
 
