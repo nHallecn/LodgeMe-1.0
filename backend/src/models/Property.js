@@ -1,34 +1,30 @@
 const pool = require("../config/db");
 
-// Helper: normalise a flat DB row into the shape the frontend expects
 function normaliseProperty(row) {
   return {
     id: row.id,
-    _id: String(row.id),          // frontend uses _id in some places
-    title: row.name,              // DB: name  →  frontend: title
+    _id: String(row.id),
+    title: row.name,
     name: row.name,
     description: row.description || "",
-    address: row.neighborhood,    // DB: neighborhood  →  frontend: address
+    address: row.neighborhood,
     city: row.city,
-    region: row.neighborhood,     // also exposed as region for breadcrumbs
+    region: row.neighborhood,
     neighborhood: row.neighborhood,
     latitude: row.latitude,
     longitude: row.longitude,
-    type: row.roomType || "Property",   // filled in after grouping
+    type: row.roomType || "Property",
     totalRooms: row.totalRooms,
     occupiedRooms: row.occupiedRooms,
-    amenities: (() => {
-      try { return JSON.parse(row.amenities || "[]"); } catch { return []; }
-    })(),
-    images: [],                   // properties table has no images column; rooms do
+    amenities: (() => { try { return JSON.parse(row.amenities || "[]"); } catch { return []; } })(),
+    images: (() => { try { return JSON.parse(row.images || "[]"); } catch { return []; } })(),
     landlord: String(row.landlordId),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
-    rooms: [],                    // populated by grouping helpers
+    rooms: [],
   };
 }
 
-// Helper: normalise a room row
 function normaliseRoom(row) {
   return {
     id: row.roomId || row.id,
@@ -38,153 +34,110 @@ function normaliseRoom(row) {
     type: row.roomType,
     roomType: row.roomType,
     capacity: row.capacity,
-    price: parseFloat(row.monthlyRent) || 0,   // DB: monthlyRent  →  frontend: price
+    price: parseFloat(row.monthlyRent) || 0,
     monthlyRent: parseFloat(row.monthlyRent) || 0,
     cautionDeposit: row.cautionDeposit,
     isAvailable: Boolean(row.isAvailable),
-    description: row.description || "",
-    images: (() => {
-      try { return JSON.parse(row.images || "[]"); } catch { return []; }
-    })(),
+    description: row.roomDescription || row.description || "",
+    images: (() => { try { return JSON.parse(row.roomImages || "[]"); } catch { return []; } })(),
   };
 }
 
-// Group flat JOIN rows into { property, rooms[] } objects
 function groupProperties(rows) {
   const map = new Map();
-
   for (const row of rows) {
     if (!map.has(row.id)) {
-      map.set(row.id, normaliseProperty(row));
+      const prop = normaliseProperty(row);
+      map.set(row.id, prop);
     }
-    // Only add room if this row actually has room data
     if (row.roomId) {
-      const room = normaliseRoom(row);
-      map.get(row.id).rooms.push(room);
-
-      // Use the first room's image array as property images
-      if (map.get(row.id).images.length === 0 && room.images.length > 0) {
-        map.get(row.id).images = room.images;
-      }
-      // Use the most common room type as the property type
-      if (!map.get(row.id)._typeSet) {
-        map.get(row.id).type = room.roomType || "Property";
-        map.get(row.id)._typeSet = true;
-      }
+      const prop = map.get(row.id);
+      prop.rooms.push(normaliseRoom(row));
+      if (!prop._typeSet) { prop.type = row.roomType || "Property"; prop._typeSet = true; }
     }
   }
-
-  // Clean up the internal flag
   for (const p of map.values()) delete p._typeSet;
-
   return Array.from(map.values());
 }
 
 class Property {
-  static async create(landlordId, name, city, neighborhood, latitude, longitude, description, totalRooms, amenities) {
+  static async create(landlordId, name, city, neighborhood, latitude, longitude, description, totalRooms, amenities, images = []) {
     const [result] = await pool.execute(
-      "INSERT INTO properties (landlordId, name, city, neighborhood, latitude, longitude, description, totalRooms, amenities) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      [landlordId, name, city, neighborhood, latitude, longitude, description, totalRooms, JSON.stringify(amenities)]
+      "INSERT INTO properties (landlordId, name, city, neighborhood, latitude, longitude, description, totalRooms, amenities, images) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [landlordId, name, city, neighborhood, latitude ?? null, longitude ?? null, description, totalRooms, JSON.stringify(amenities || []), JSON.stringify(images || [])]
     );
     return result.insertId;
   }
 
   static async findById(id) {
-    // Fetch property + all its rooms in one query
     const [rows] = await pool.execute(
-      `SELECT
-         p.*,
-         r.id        AS roomId,
-         r.roomNumber,
-         r.roomType,
-         r.capacity,
-         r.monthlyRent,
-         r.cautionDeposit,
-         r.isAvailable,
-         r.description AS roomDescription,
-         r.images
+      `SELECT p.*,
+        r.id AS roomId, r.roomNumber, r.roomType, r.capacity,
+        r.monthlyRent, r.cautionDeposit, r.isAvailable,
+        r.description AS roomDescription, r.images AS roomImages
        FROM properties p
        LEFT JOIN rooms r ON p.id = r.propertyId
        WHERE p.id = ?
        ORDER BY r.roomNumber ASC`,
       [id]
     );
-
     if (rows.length === 0) return null;
-
-    const grouped = groupProperties(rows);
-    return grouped[0] || null;
+    return groupProperties(rows)[0] || null;
   }
 
   static async findAll({ city, neighborhood, search, minPrice, maxPrice, roomType, isAvailable, limit, offset } = {}) {
-    // LEFT JOIN so properties without rooms are still returned
     let query = `
-      SELECT
-        p.*,
-        r.id           AS roomId,
-        r.roomNumber,
-        r.roomType,
-        r.capacity,
-        r.monthlyRent,
-        r.cautionDeposit,
-        r.isAvailable,
-        r.description  AS roomDescription,
-        r.images
+      SELECT p.*,
+        r.id AS roomId, r.roomNumber, r.roomType, r.capacity,
+        r.monthlyRent, r.cautionDeposit, r.isAvailable,
+        r.description AS roomDescription, r.images AS roomImages
       FROM properties p
       LEFT JOIN rooms r ON p.id = r.propertyId
       WHERE 1=1
     `;
     const params = [];
 
-    if (city) {
-      query += " AND p.city = ?";
-      params.push(city);
-    }
-    if (neighborhood) {
-      query += " AND p.neighborhood = ?";
-      params.push(neighborhood);
-    }
+    if (city)        { query += " AND p.city = ?";          params.push(String(city)); }
+    if (neighborhood){ query += " AND p.neighborhood = ?";   params.push(String(neighborhood)); }
     if (search) {
       query += " AND (p.name LIKE ? OR p.city LIKE ? OR p.neighborhood LIKE ?)";
       const like = `%${search}%`;
       params.push(like, like, like);
     }
-    if (minPrice) {
-      query += " AND r.monthlyRent >= ?";
-      params.push(minPrice);
+    if (minPrice !== undefined && minPrice !== "") {
+      const min = parseFloat(minPrice);
+      if (!isNaN(min)) { query += " AND r.monthlyRent >= ?"; params.push(min); }
     }
-    if (maxPrice) {
-      query += " AND r.monthlyRent <= ?";
-      params.push(maxPrice);
+    if (maxPrice !== undefined && maxPrice !== "") {
+      const max = parseFloat(maxPrice);
+      if (!isNaN(max)) { query += " AND r.monthlyRent <= ?"; params.push(max); }
     }
-    if (roomType) {
-      query += " AND r.roomType = ?";
-      params.push(roomType);
-    }
-    if (isAvailable !== undefined) {
+    if (roomType)    { query += " AND r.roomType = ?";       params.push(String(roomType)); }
+    if (isAvailable !== undefined && isAvailable !== "") {
+      const avail = isAvailable === true || isAvailable === "true" || isAvailable === "1" ? 1 : 0;
       query += " AND r.isAvailable = ?";
-      params.push(isAvailable);
+      params.push(avail);
     }
 
     query += " ORDER BY p.createdAt DESC";
 
-    if (limit) {
-      query += " LIMIT ?";
-      params.push(parseInt(limit));
+    if (limit !== undefined && limit !== "") {
+      const lim = parseInt(limit);
+      if (!isNaN(lim)) { query += " LIMIT ?"; params.push(lim); }
     }
-    if (offset) {
-      query += " OFFSET ?";
-      params.push(parseInt(offset));
+    if (offset !== undefined && offset !== "") {
+      const off = parseInt(offset);
+      if (!isNaN(off)) { query += " OFFSET ?"; params.push(off); }
     }
 
     const [rows] = await pool.execute(query, params);
     return groupProperties(rows);
   }
 
-  static async update(id, { name, city, neighborhood, latitude, longitude, description, totalRooms, amenities }) {
+  static async update(id, { name, city, neighborhood, latitude, longitude, description, totalRooms, amenities, images }) {
     const [result] = await pool.execute(
-      "UPDATE properties SET name = ?, city = ?, neighborhood = ?, latitude = ?, longitude = ?, description = ?, totalRooms = ?, amenities = ? WHERE id = ?",
-      [name, city, neighborhood, latitude, longitude, description, totalRooms, JSON.stringify(amenities), id]
+      "UPDATE properties SET name = ?, city = ?, neighborhood = ?, latitude = ?, longitude = ?, description = ?, totalRooms = ?, amenities = ?, images = ? WHERE id = ?",
+      [name, city, neighborhood, latitude ?? null, longitude ?? null, description, totalRooms, JSON.stringify(amenities || []), JSON.stringify(images || []), id]
     );
     return result.affectedRows;
   }
@@ -196,17 +149,10 @@ class Property {
 
   static async findByLandlordId(landlordId) {
     const [rows] = await pool.execute(
-      `SELECT
-         p.*,
-         r.id           AS roomId,
-         r.roomNumber,
-         r.roomType,
-         r.capacity,
-         r.monthlyRent,
-         r.cautionDeposit,
-         r.isAvailable,
-         r.description  AS roomDescription,
-         r.images
+      `SELECT p.*,
+        r.id AS roomId, r.roomNumber, r.roomType, r.capacity,
+        r.monthlyRent, r.cautionDeposit, r.isAvailable,
+        r.description AS roomDescription, r.images AS roomImages
        FROM properties p
        LEFT JOIN rooms r ON p.id = r.propertyId
        WHERE p.landlordId = ?

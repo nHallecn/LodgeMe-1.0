@@ -30,7 +30,9 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 // ── Route guards ─────────────────────────────────────────────────────────────
-const ProtectedRoute = ({ children, role }: { children: ReactNode; role?: string }) => {
+const ProtectedRoute = ({ children, role }: { 
+  
+  children: ReactNode; role?: string }) => {
   const { isAuthenticated, user } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (role && user?.role !== role && user?.role !== "admin")
