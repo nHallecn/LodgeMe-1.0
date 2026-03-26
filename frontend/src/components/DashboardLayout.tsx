@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import {
   LayoutDashboard, Building2, Users, CreditCard, FileText,
-  Wrench, Calendar, LogOut, Home, ChevronRight,
+  Wrench, Calendar, LogOut, Home, ChevronRight, ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -19,26 +19,26 @@ const DashboardLayout = ({ children, title, subtitle }: DashboardLayoutProps) =>
   const location = useLocation();
 
   const landlordLinks = [
-    { to: "/landlord/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-    { to: "/landlord/properties", icon: Building2, label: "Properties" },
-    { to: "/landlord/payments", icon: CreditCard, label: "Payments" },
-    { to: "/landlord/invoices", icon: FileText, label: "Invoices" },
-    { to: "/landlord/maintenance", icon: Wrench, label: "Maintenance" },
+    { to: "/landlord/dashboard",   icon: LayoutDashboard, label: "Dashboard" },
+    { to: "/landlord/properties",  icon: Building2,       label: "Properties" },
+    { to: "/landlord/bookings",    icon: ClipboardList,   label: "Bookings" },
+    { to: "/landlord/payments",    icon: CreditCard,      label: "Payments" },
+    { to: "/landlord/invoices",    icon: FileText,        label: "Invoices" },
+    { to: "/landlord/maintenance", icon: Wrench,          label: "Maintenance" },
   ];
 
   const tenantLinks = [
-    { to: "/tenant/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-    { to: "/tenant/bookings", icon: Calendar, label: "Bookings" },
-    { to: "/tenant/payments", icon: CreditCard, label: "Payments" },
-    { to: "/tenant/maintenance", icon: Wrench, label: "Maintenance" },
-    { to: "/tenant/visits", icon: Users, label: "Visit Requests" },
+    { to: "/tenant/dashboard",   icon: LayoutDashboard, label: "Dashboard" },
+    { to: "/tenant/bookings",    icon: Calendar,        label: "Bookings" },
+    { to: "/tenant/payments",    icon: CreditCard,      label: "Payments" },
+    { to: "/tenant/maintenance", icon: Wrench,          label: "Maintenance" },
+    { to: "/tenant/visits",      icon: Users,           label: "Visit Requests" },
   ];
 
   const links = user?.role === "landlord" ? landlordLinks : tenantLinks;
 
   return (
     <div className="flex min-h-screen bg-secondary/30">
-      {/* Sidebar */}
       <aside className="hidden w-64 flex-col border-r border-border bg-card lg:flex">
         <div className="flex h-16 items-center gap-2 border-b border-border px-6">
           <Link to="/" className="flex items-center gap-2">
@@ -84,9 +84,7 @@ const DashboardLayout = ({ children, title, subtitle }: DashboardLayoutProps) =>
         </div>
       </aside>
 
-      {/* Main content */}
       <div className="flex flex-1 flex-col">
-        {/* Top bar for mobile */}
         <header className="flex h-16 items-center justify-between border-b border-border bg-card px-6 lg:hidden">
           <Link to="/" className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
@@ -95,15 +93,11 @@ const DashboardLayout = ({ children, title, subtitle }: DashboardLayoutProps) =>
             <span className="font-display font-bold">LodgeMe</span>
           </Link>
         </header>
-
-        {/* Mobile nav */}
         <div className="flex gap-1 overflow-x-auto border-b border-border bg-card p-2 lg:hidden">
           {links.map((link) => {
             const isActive = location.pathname === link.to;
             return (
-              <Link
-                key={link.to}
-                to={link.to}
+              <Link key={link.to} to={link.to}
                 className={cn(
                   "flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-xs font-medium",
                   isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground"
@@ -115,8 +109,6 @@ const DashboardLayout = ({ children, title, subtitle }: DashboardLayoutProps) =>
             );
           })}
         </div>
-
-        {/* Page content */}
         <main className="flex-1 p-6">
           <div className="mb-6">
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">

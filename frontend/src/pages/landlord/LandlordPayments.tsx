@@ -3,69 +3,59 @@ import { paymentsAPI } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { CreditCard, Plus, Loader2, TrendingUp } from "lucide-react";
+import { CreditCard, Loader2, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Payment } from "@/types";
+
+interface Payment {
+  id: number;
+  bookingId: number;
+  landlordId: number;
+  amount: number;
+  paymentDate: string;
+  paymentMethod: string;
+  receiptNumber?: string;
+  notes?: string;
+  createdAt: string;
+}
+
+const methodLabel: Record<string, string> = {
+  cash: "Cash",
+  mobile_money: "Mobile Money",
+  bank_transfer: "Bank Transfer",
+  other: "Other",
+};
 
 const LandlordPayments = () => {
   const { toast } = useToast();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ total: 0, pending: 0, completed: 0 });
 
   useEffect(() => {
     const fetchPayments = async () => {
       try {
-        const response = await paymentsAPI.getByLandlord();
-        const data = Array.isArray(response.data) ? response.data : response.data.payments || [];
-        setPayments(data);
-
-        // Calculate stats
-        const total = data.reduce((sum: number, p: Payment) => sum + p.amount, 0);
-        const pending = data.filter((p: Payment) => p.status === "pending").length;
-        const completed = data.filter((p: Payment) => p.status === "completed").length;
-        setStats({ total, pending, completed });
-      } catch (err) {
-        toast({
-          title: "Failed to load payments",
-          description: "Could not fetch payment records",
-          variant: "destructive",
-        });
+        const { data } = await paymentsAPI.getByLandlord();
+        setPayments(Array.isArray(data) ? data : data.payments || []);
+      } catch {
+        toast({ title: "Failed to load payments", variant: "destructive" });
       } finally {
         setLoading(false);
       }
     };
-
     fetchPayments();
   }, [toast]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "bg-green-100 text-green-800";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800";
-      case "failed":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
+  const total = payments.reduce((s, p) => s + Number(p.amount), 0);
 
   if (loading) {
     return (
       <DashboardLayout title="Payment Records" subtitle="View all tenant payments">
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
+        <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
       </DashboardLayout>
     );
   }
 
   return (
     <DashboardLayout title="Payment Records" subtitle="View all tenant payments">
-      {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-3 mb-6">
         <Card>
           <CardContent className="flex items-center gap-4 p-6">
@@ -74,44 +64,38 @@ const LandlordPayments = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Received</p>
-              <p className="font-display text-2xl font-bold">XAF {stats.total.toLocaleString()}</p>
+              <p className="font-display text-2xl font-bold">XAF {total.toLocaleString()}</p>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="flex items-center gap-4 p-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-yellow-100">
-              <CreditCard className="h-6 w-6 text-yellow-600" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100">
+              <CreditCard className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Pending</p>
-              <p className="font-display text-2xl font-bold">{stats.pending}</p>
+              <p className="text-sm text-muted-foreground">Total Records</p>
+              <p className="font-display text-2xl font-bold">{payments.length}</p>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="flex items-center gap-4 p-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-100">
-              <CreditCard className="h-6 w-6 text-green-600" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-100">
+              <CreditCard className="h-6 w-6 text-purple-600" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Completed</p>
-              <p className="font-display text-2xl font-bold">{stats.completed}</p>
+              <p className="text-sm text-muted-foreground">Avg Payment</p>
+              <p className="font-display text-2xl font-bold">
+                XAF {payments.length ? Math.round(total / payments.length).toLocaleString() : 0}
+              </p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Payments List */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="font-display">Payment History</CardTitle>
-          <Button asChild size="sm">
-            <a href="/landlord/payments/new" className="gap-2">
-              <Plus className="h-4 w-4" /> Record Payment
-            </a>
-          </Button>
-        </CardHeader>
+        <CardHeader><CardTitle className="font-display">Payment History</CardTitle></CardHeader>
         <CardContent>
           {payments.length === 0 ? (
             <div className="py-12 text-center">
@@ -123,29 +107,27 @@ const LandlordPayments = () => {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left py-3 px-4">Booking ID</th>
+                    <th className="text-left py-3 px-4">Booking</th>
                     <th className="text-left py-3 px-4">Amount</th>
                     <th className="text-left py-3 px-4">Method</th>
-                    <th className="text-left py-3 px-4">Status</th>
                     <th className="text-left py-3 px-4">Date</th>
-                    <th className="text-left py-3 px-4">Reference</th>
+                    <th className="text-left py-3 px-4">Receipt</th>
+                    <th className="text-left py-3 px-4">Notes</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {payments.map((payment) => (
-                    <tr key={payment._id} className="border-b hover:bg-muted/50">
-                      <td className="py-3 px-4">{typeof payment.booking === "string" ? payment.booking : payment.booking?._id}</td>
-                      <td className="py-3 px-4 font-semibold">XAF {payment.amount.toLocaleString()}</td>
-                      <td className="py-3 px-4 capitalize">{payment.method}</td>
+                  {payments.map((p) => (
+                    <tr key={p.id} className="border-b hover:bg-muted/50">
+                      <td className="py-3 px-4 text-muted-foreground">#{p.bookingId}</td>
+                      <td className="py-3 px-4 font-semibold">XAF {Number(p.amount).toLocaleString()}</td>
                       <td className="py-3 px-4">
-                        <Badge className={getStatusColor(payment.status)} variant="outline">
-                          {payment.status}
-                        </Badge>
+                        <Badge variant="outline">{methodLabel[p.paymentMethod] || p.paymentMethod}</Badge>
                       </td>
                       <td className="py-3 px-4 text-muted-foreground">
-                        {new Date(payment.createdAt).toLocaleDateString()}
+                        {new Date(p.paymentDate).toLocaleDateString()}
                       </td>
-                      <td className="py-3 px-4 text-xs text-muted-foreground">{payment.reference}</td>
+                      <td className="py-3 px-4 text-xs text-muted-foreground">{p.receiptNumber || "—"}</td>
+                      <td className="py-3 px-4 text-xs text-muted-foreground">{p.notes || "—"}</td>
                     </tr>
                   ))}
                 </tbody>

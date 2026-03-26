@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams } from "react-router-dom";
 import { propertiesAPI } from "@/lib/api";
@@ -13,12 +13,21 @@ import { FormTextarea } from "@/components/FormTextarea";
 import { FormSelect } from "@/components/FormSelect";
 import { roomCreateSchema, type RoomCreateFormData } from "@/lib/validations";
 
+const roomTypes = [
+  { value: "single",    label: "Single Room" },
+  { value: "double",    label: "Double Room" },
+  { value: "studio",    label: "Studio" },
+  { value: "apartment", label: "Apartment" },
+];
+
 const AddRoom = () => {
   const { propertyId } = useParams<{ propertyId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<RoomCreateFormData>({
@@ -30,19 +39,18 @@ const AddRoom = () => {
       toast({ title: "Error", description: "Property ID is missing", variant: "destructive" });
       return;
     }
-
     try {
       await propertiesAPI.createRoom(propertyId, {
-        roomNumber: data.roomNumber,
-        roomType: data.roomType,
-        capacity: data.capacity,
-        monthlyRent: data.monthlyRent,
+        roomNumber:     data.roomNumber,
+        roomType:       data.roomType,
+        capacity:       data.capacity,
+        monthlyRent:    data.monthlyRent,
         cautionDeposit: data.cautionDeposit,
-        description: data.description,
-        images: data.images,
+        description:    data.description,
+        images:         data.images,
       });
       toast({ title: "Room added successfully" });
-      navigate(`/landlord/properties/${propertyId}`);
+      navigate(`/landlord/properties`);
     } catch (err: any) {
       toast({
         title: "Failed to add room",
@@ -51,13 +59,6 @@ const AddRoom = () => {
       });
     }
   };
-
-  const roomTypes = [
-    { value: "single", label: "Single Room" },
-    { value: "double", label: "Double Room" },
-    { value: "studio", label: "Studio" },
-    { value: "apartment", label: "Apartment" },
-  ];
 
   return (
     <DashboardLayout title="Add New Room" subtitle={`Add a room to property ${propertyId}`}>
@@ -69,6 +70,7 @@ const AddRoom = () => {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+
                 <FormInput
                   label="Room Number"
                   placeholder="e.g. 101, A1, Suite 1"
@@ -76,17 +78,29 @@ const AddRoom = () => {
                   required
                   {...register("roomNumber")}
                 />
-                <FormSelect
-                  label="Room Type"
-                  placeholder="Select room type"
-                  error={errors.roomType}
-                  required
-                  options={roomTypes}
-                  {...register("roomType")}
+
+                {/* Controller wires shadcn Select correctly to react-hook-form */}
+                <Controller
+                  name="roomType"
+                  control={control}
+                  render={({ field }) => (
+                    <FormSelect
+                      label="Room Type"
+                      placeholder="Select room type"
+                      error={errors.roomType}
+                      required
+                      options={roomTypes}
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                    />
+                  )}
                 />
+
                 <div className="grid grid-cols-2 gap-4">
                   <FormInput
-                    label="Capacity (Number of People)"
+                    label="Capacity (persons)"
                     placeholder="e.g. 2"
                     type="number"
                     error={errors.capacity}
@@ -102,6 +116,7 @@ const AddRoom = () => {
                     {...register("monthlyRent", { valueAsNumber: true })}
                   />
                 </div>
+
                 <FormInput
                   label="Caution Deposit (XAF, Optional)"
                   placeholder="e.g. 300000"
@@ -109,20 +124,26 @@ const AddRoom = () => {
                   error={errors.cautionDeposit}
                   {...register("cautionDeposit", { valueAsNumber: true })}
                 />
+
                 <FormTextarea
                   label="Description (Optional)"
                   placeholder="Describe the room features, furniture, etc."
                   error={errors.description}
                   {...register("description")}
                 />
+
                 <FormInput
                   label="Image URLs (comma separated, Optional)"
                   placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
                   error={errors.images}
                   {...register("images", {
-                    setValueAs: (value) => value.split(",").map((url: string) => url.trim()).filter(Boolean),
+                    setValueAs: (value) =>
+                      typeof value === "string"
+                        ? value.split(",").map((u: string) => u.trim()).filter(Boolean)
+                        : value,
                   })}
                 />
+
                 <div className="flex gap-3 pt-2">
                   <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -139,22 +160,12 @@ const AddRoom = () => {
 
         <div>
           <Card>
-            <CardHeader>
-              <CardTitle className="font-display text-base">Room Information</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="font-display text-base">Room Information</CardTitle></CardHeader>
             <CardContent className="text-sm space-y-3 text-muted-foreground">
-              <p>
-                <strong>Room Number:</strong> Use a unique identifier for this room within your property.
-              </p>
-              <p>
-                <strong>Monthly Rent:</strong> The monthly rental price in XAF currency.
-              </p>
-              <p>
-                <strong>Caution Deposit:</strong> Security deposit required from tenants (typically 2x monthly rent).
-              </p>
-              <p>
-                <strong>Images:</strong> Add room photos to attract more tenants. Use full URLs.
-              </p>
+              <p><strong>Room Number:</strong> Use a unique identifier for this room within your property.</p>
+              <p><strong>Monthly Rent:</strong> The monthly rental price in XAF currency.</p>
+              <p><strong>Caution Deposit:</strong> Security deposit required from tenants (typically 2× monthly rent).</p>
+              <p><strong>Images:</strong> Add room photos to attract more tenants. Use full URLs.</p>
             </CardContent>
           </Card>
         </div>

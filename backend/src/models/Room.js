@@ -2,9 +2,17 @@ const pool = require("../config/db");
 
 class Room {
   static async create(propertyId, roomNumber, roomType, capacity, monthlyRent, cautionDeposit, isAvailable, description, images) {
+    // Coerce optional fields: undefined is not accepted by mysql2 — use null / safe defaults
+    const safeDeposit     = cautionDeposit ?? null;
+    const safeAvailable   = isAvailable    ?? true;
+    const safeDescription = description    ?? null;
+    const safeImages      = JSON.stringify(
+      Array.isArray(images) ? images : []
+    );
+
     const [result] = await pool.execute(
       "INSERT INTO rooms (propertyId, roomNumber, roomType, capacity, monthlyRent, cautionDeposit, isAvailable, description, images) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      [propertyId, roomNumber, roomType, capacity, monthlyRent, cautionDeposit, isAvailable, description, JSON.stringify(images)]
+      [propertyId, roomNumber, roomType, capacity, monthlyRent, safeDeposit, safeAvailable, safeDescription, safeImages]
     );
     return result.insertId;
   }
@@ -39,7 +47,17 @@ class Room {
   static async update(id, { roomNumber, roomType, capacity, monthlyRent, cautionDeposit, isAvailable, description, images }) {
     const [result] = await pool.execute(
       "UPDATE rooms SET roomNumber = ?, roomType = ?, capacity = ?, monthlyRent = ?, cautionDeposit = ?, isAvailable = ?, description = ?, images = ? WHERE id = ?",
-      [roomNumber, roomType, capacity, monthlyRent, cautionDeposit, isAvailable, description, JSON.stringify(images), id]
+      [
+        roomNumber,
+        roomType,
+        capacity,
+        monthlyRent,
+        cautionDeposit ?? null,
+        isAvailable    ?? true,
+        description    ?? null,
+        JSON.stringify(Array.isArray(images) ? images : []),
+        id,
+      ]
     );
     return result.affectedRows;
   }
