@@ -1,12 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { propertiesAPI } from "@/lib/api";
 import { Property } from "@/types";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Building2, Plus, MapPin, Trash2, Loader2, BedDouble } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 const LandlordProperties = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -61,11 +61,12 @@ const LandlordProperties = () => {
     <DashboardLayout title="My Properties" subtitle="Manage your rental properties">
       <div className="mb-6 flex justify-between items-center">
         <p className="text-sm text-muted-foreground">{properties.length} properties listed</p>
-        <Button asChild>
-          <Link to="/landlord/properties/new" className="gap-2">
-            <Plus className="h-4 w-4" /> Add Property
-          </Link>
-        </Button>
+        <button
+          onClick={() => navigate("/landlord/properties/new")}
+          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90"
+        >
+          <Plus className="h-4 w-4" /> Add Property
+        </button>
       </div>
 
       {properties.length === 0 ? (
@@ -74,7 +75,12 @@ const LandlordProperties = () => {
             <Building2 className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="font-display text-lg font-semibold mb-2">No Properties Yet</h3>
             <p className="text-sm text-muted-foreground mb-4">Start by adding your first rental property</p>
-            <Button asChild><Link to="/landlord/properties/new">Add Your First Property</Link></Button>
+            <button
+              onClick={() => navigate("/landlord/properties/new")}
+              className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90"
+            >
+              Add Your First Property
+            </button>
           </CardContent>
         </Card>
       ) : (
@@ -118,21 +124,25 @@ const LandlordProperties = () => {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button asChild size="sm" variant="outline" className="flex-1">
-                      <Link to={`/properties/${pid}`}>View</Link>
-                    </Button>
-                    <Button asChild size="sm" variant="outline" className="flex-1 gap-1">
-                      <Link to={`/landlord/properties/${pid}/rooms/new`}>
-                        <BedDouble className="h-3 w-3" /> Add Room
-                      </Link>
-                    </Button>
-                    <Button
-                      size="sm" variant="destructive"
+                    <button
+                      onClick={() => navigate(`/properties/${pid}`)}
+                      className="flex-1 inline-flex justify-center items-center rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
+                    >
+                      View
+                    </button>
+                    <button
+                      onClick={() => navigate(`/landlord/properties/${pid}/rooms/new`)}
+                      className="flex-1 inline-flex justify-center items-center gap-1 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
+                    >
+                      <BedDouble className="h-3 w-3" /> Add Room
+                    </button>
+                    <button
                       onClick={() => handleDelete(pid)}
                       disabled={deleting === pid}
+                      className="inline-flex justify-center items-center rounded-md bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
                     >
                       {deleting === pid ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                    </Button>
+                    </button>
                   </div>
                 </CardContent>
               </Card>

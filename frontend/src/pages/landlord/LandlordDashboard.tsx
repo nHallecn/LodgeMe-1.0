@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { propertiesAPI, paymentsAPI, invoicesAPI, bookingsAPI } from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Building2, CreditCard, FileText, ClipboardList, Loader2 } from "lucide-react";
 
 const LandlordDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState({ properties: 0, payments: 0, invoices: 0, bookings: 0 });
   const [pendingBookings, setPendingBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,18 +23,11 @@ const LandlordDashboard = () => {
           invoicesAPI.getByLandlord().catch(() => ({ data: [] })),
           bookingsAPI.getByLandlord().catch(() => ({ data: [] })),
         ]);
-
-        const propList   = Array.isArray(props.data)    ? props.data    : props.data.properties    || [];
-        const payList    = Array.isArray(payments.data)  ? payments.data  : payments.data.payments  || [];
-        const invList    = Array.isArray(invoices.data)  ? invoices.data  : invoices.data.invoices  || [];
-        const bookList   = Array.isArray(bookings.data)  ? bookings.data  : bookings.data.bookings  || [];
-
-        setStats({
-          properties: propList.length,
-          payments:   payList.length,
-          invoices:   invList.length,
-          bookings:   bookList.length,
-        });
+        const propList  = Array.isArray(props.data)    ? props.data    : props.data.properties || [];
+        const payList   = Array.isArray(payments.data)  ? payments.data  : [];
+        const invList   = Array.isArray(invoices.data)  ? invoices.data  : [];
+        const bookList  = Array.isArray(bookings.data)  ? bookings.data  : [];
+        setStats({ properties: propList.length, payments: payList.length, invoices: invList.length, bookings: bookList.length });
         setPendingBookings(bookList.filter((b: any) => b.status === "pending").slice(0, 5));
       } catch { /* ignore */ }
       finally { setLoading(false); }
@@ -43,10 +36,10 @@ const LandlordDashboard = () => {
   }, [user]);
 
   const cards = [
-    { title: "Properties", value: stats.properties, icon: Building2,    color: "text-primary",   bg: "bg-primary/10",   to: "/landlord/properties" },
-    { title: "Bookings",   value: stats.bookings,   icon: ClipboardList, color: "text-blue-600",  bg: "bg-blue-100",     to: "/landlord/bookings"   },
-    { title: "Payments",   value: stats.payments,   icon: CreditCard,    color: "text-green-600", bg: "bg-green-100",    to: "/landlord/payments"   },
-    { title: "Invoices",   value: stats.invoices,   icon: FileText,      color: "text-orange-600",bg: "bg-orange-100",   to: "/landlord/invoices"   },
+    { title: "Properties", value: stats.properties, icon: Building2,    color: "text-primary",    bg: "bg-primary/10",  path: "/landlord/properties" },
+    { title: "Bookings",   value: stats.bookings,   icon: ClipboardList, color: "text-blue-600",   bg: "bg-blue-100",    path: "/landlord/bookings"   },
+    { title: "Payments",   value: stats.payments,   icon: CreditCard,    color: "text-green-600",  bg: "bg-green-100",   path: "/landlord/payments"   },
+    { title: "Invoices",   value: stats.invoices,   icon: FileText,      color: "text-orange-600", bg: "bg-orange-100",  path: "/landlord/invoices"   },
   ];
 
   return (
@@ -57,8 +50,8 @@ const LandlordDashboard = () => {
         <>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-6">
             {cards.map((card) => (
-              <Link key={card.title} to={card.to}>
-                <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <div key={card.title} onClick={() => navigate(card.path)} className="cursor-pointer">
+                <Card className="hover:shadow-md transition-shadow">
                   <CardContent className="flex items-center gap-4 p-6">
                     <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${card.bg}`}>
                       <card.icon className={`h-6 w-6 ${card.color}`} />
@@ -69,11 +62,10 @@ const LandlordDashboard = () => {
                     </div>
                   </CardContent>
                 </Card>
-              </Link>
+              </div>
             ))}
           </div>
 
-          {/* Pending bookings alert */}
           {pendingBookings.length > 0 && (
             <Card className="border-yellow-200 bg-yellow-50 mb-6">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -81,9 +73,12 @@ const LandlordDashboard = () => {
                   <ClipboardList className="h-4 w-4 text-yellow-600" />
                   {pendingBookings.length} Pending Booking Request{pendingBookings.length > 1 ? "s" : ""}
                 </CardTitle>
-                <Button asChild size="sm" variant="outline">
-                  <Link to="/landlord/bookings">Review All</Link>
-                </Button>
+                <button
+                  onClick={() => navigate("/landlord/bookings")}
+                  className="text-sm font-medium text-primary hover:underline"
+                >
+                  Review All
+                </button>
               </CardHeader>
               <CardContent className="space-y-2">
                 {pendingBookings.map((b: any) => (
@@ -99,9 +94,24 @@ const LandlordDashboard = () => {
           <Card>
             <CardHeader><CardTitle className="font-display">Quick Actions</CardTitle></CardHeader>
             <CardContent className="flex flex-wrap gap-3">
-              <Button asChild variant="outline"><Link to="/landlord/properties/new">+ Add Property</Link></Button>
-              <Button asChild variant="outline"><Link to="/landlord/bookings">Review Bookings</Link></Button>
-              <Button asChild variant="outline"><Link to="/landlord/maintenance">Check Tickets</Link></Button>
+              <button
+                onClick={() => navigate("/landlord/properties/new")}
+                className="inline-flex items-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground"
+              >
+                + Add Property
+              </button>
+              <button
+                onClick={() => navigate("/landlord/bookings")}
+                className="inline-flex items-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground"
+              >
+                Review Bookings
+              </button>
+              <button
+                onClick={() => navigate("/landlord/maintenance")}
+                className="inline-flex items-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground"
+              >
+                Check Tickets
+              </button>
             </CardContent>
           </Card>
         </>
