@@ -7,7 +7,7 @@ import { Property } from "@/types";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Plus, MapPin, Trash2, Loader2, BedDouble } from "lucide-react";
+import { Building2, Plus, MapPin, Trash2, Loader2, BedDouble, ImageOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const LandlordProperties = () => {
@@ -23,6 +23,8 @@ const LandlordProperties = () => {
       try {
         const response = await propertiesAPI.getByLandlord(String(user?.id || ""));
         const data = Array.isArray(response.data) ? response.data : response.data.properties || [];
+        // Debug: log what images field looks like
+        data.forEach((p: any) => console.log(`Property "${p.name || p.title}" images:`, p.images));
         setProperties(data);
       } catch {
         toast({ title: "Failed to load properties", variant: "destructive" });
@@ -87,13 +89,30 @@ const LandlordProperties = () => {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {properties.map((property) => {
             const pid = String(property._id || property.id);
+            const coverImage = property.images?.[0];
+
             return (
               <Card key={pid} className="overflow-hidden hover:shadow-lg transition-shadow">
-                {property.images?.[0] && (
-                  <div className="aspect-video overflow-hidden bg-muted">
-                    <img src={property.images[0]} alt={property.title || property.name} className="h-full w-full object-cover" />
-                  </div>
-                )}
+                {/* Image slot — always rendered so you can see if data is missing */}
+                <div className="aspect-video overflow-hidden bg-muted relative">
+                  {coverImage ? (
+                    <img
+                      src={coverImage}
+                      alt={property.title || property.name}
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        // If image fails to load, show fallback
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
+                      <ImageOff className="h-8 w-8" />
+                      <span className="text-xs">No photo</span>
+                    </div>
+                  )}
+                </div>
+
                 <CardHeader>
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1">
@@ -108,6 +127,7 @@ const LandlordProperties = () => {
                     <Badge variant="outline" className="capitalize">{property.type}</Badge>
                   </div>
                 </CardHeader>
+
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>
@@ -118,7 +138,7 @@ const LandlordProperties = () => {
                       <p className="text-muted-foreground">Min Price</p>
                       <p className="font-semibold text-xs">
                         {property.rooms?.length
-                          ? `XAF ${Math.min(...property.rooms.map((r) => r.price ?? r.monthlyRent ?? 0)).toLocaleString()}`
+                          ? `XAF ${Math.min(...property.rooms.map((r: any) => r.price ?? r.monthlyRent ?? 0)).toLocaleString()}`
                           : "N/A"}
                       </p>
                     </div>

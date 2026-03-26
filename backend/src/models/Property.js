@@ -11,13 +11,12 @@ function normaliseProperty(row) {
     city: row.city,
     region: row.neighborhood,
     neighborhood: row.neighborhood,
-    latitude: row.latitude,
-    longitude: row.longitude,
     type: row.roomType || "Property",
     totalRooms: row.totalRooms,
     occupiedRooms: row.occupiedRooms,
     amenities: (() => { try { return JSON.parse(row.amenities || "[]"); } catch { return []; } })(),
-    images: (() => { try { return JSON.parse(row.images || "[]"); } catch { return []; } })(),
+    // Read from explicit alias p.images AS propertyImages — never collides with room images
+    images: (() => { try { return JSON.parse(row.propertyImages || "[]"); } catch { return []; } })(),
     landlord: String(row.landlordId),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -38,7 +37,8 @@ function normaliseRoom(row) {
     monthlyRent: parseFloat(row.monthlyRent) || 0,
     cautionDeposit: row.cautionDeposit,
     isAvailable: Boolean(row.isAvailable),
-    description: row.roomDescription || row.description || "",
+    description: row.roomDescription || "",
+    // Read from explicit alias r.images AS roomImages
     images: (() => { try { return JSON.parse(row.roomImages || "[]"); } catch { return []; } })(),
   };
 }
@@ -60,6 +60,21 @@ function groupProperties(rows) {
   return Array.from(map.values());
 }
 
+// Shared SELECT columns used in every query — both aliases explicit
+const COLS = `
+  p.*,
+  p.images        AS propertyImages,
+  r.id            AS roomId,
+  r.roomNumber,
+  r.roomType,
+  r.capacity,
+  r.monthlyRent,
+  r.cautionDeposit,
+  r.isAvailable,
+  r.description   AS roomDescription,
+  r.images        AS roomImages
+`;
+
 class Property {
   static async create(landlordId, name, city, neighborhood, latitude, longitude, description, totalRooms, amenities, images = []) {
     const [result] = await pool.execute(
@@ -71,10 +86,7 @@ class Property {
 
   static async findById(id) {
     const [rows] = await pool.execute(
-      `SELECT p.*,
-        r.id AS roomId, r.roomNumber, r.roomType, r.capacity,
-        r.monthlyRent, r.cautionDeposit, r.isAvailable,
-        r.description AS roomDescription, r.images AS roomImages
+      `SELECT ${COLS}
        FROM properties p
        LEFT JOIN rooms r ON p.id = r.propertyId
        WHERE p.id = ?
@@ -86,19 +98,11 @@ class Property {
   }
 
   static async findAll({ city, neighborhood, search, minPrice, maxPrice, roomType, isAvailable, limit, offset } = {}) {
-    let query = `
-      SELECT p.*,
-        r.id AS roomId, r.roomNumber, r.roomType, r.capacity,
-        r.monthlyRent, r.cautionDeposit, r.isAvailable,
-        r.description AS roomDescription, r.images AS roomImages
-      FROM properties p
-      LEFT JOIN rooms r ON p.id = r.propertyId
-      WHERE 1=1
-    `;
+    let query = `SELECT ${COLS} FROM properties p LEFT JOIN rooms r ON p.id = r.propertyId WHERE 1=1`;
     const params = [];
 
-    if (city)        { query += " AND p.city = ?";          params.push(String(city)); }
-    if (neighborhood){ query += " AND p.neighborhood = ?";   params.push(String(neighborhood)); }
+    if (city)        { query += " AND p.city = ?";        params.push(String(city)); }
+    if (neighborhood){ query += " AND p.neighborhood = ?"; params.push(String(neighborhood)); }
     if (search) {
       query += " AND (p.name LIKE ? OR p.city LIKE ? OR p.neighborhood LIKE ?)";
       const like = `%${search}%`;
@@ -112,7 +116,7 @@ class Property {
       const max = parseFloat(maxPrice);
       if (!isNaN(max)) { query += " AND r.monthlyRent <= ?"; params.push(max); }
     }
-    if (roomType)    { query += " AND r.roomType = ?";       params.push(String(roomType)); }
+    if (roomType) { query += " AND r.roomType = ?"; params.push(String(roomType)); }
     if (isAvailable !== undefined && isAvailable !== "") {
       const avail = isAvailable === true || isAvailable === "true" || isAvailable === "1" ? 1 : 0;
       query += " AND r.isAvailable = ?";
@@ -122,13 +126,14 @@ class Property {
     query += " ORDER BY p.createdAt DESC";
 
     if (limit !== undefined && limit !== "") {
-      const lim = parseInt(limit);
-      if (!isNaN(lim)) { query += " LIMIT ?"; params.push(lim); }
-    }
-    if (offset !== undefined && offset !== "") {
-      const off = parseInt(offset);
-      if (!isNaN(off)) { query += " OFFSET ?"; params.push(off); }
-    }
+  const lim = parseInt(limit);
+  if (!isNaN(lim)) query += ` LIMIT ${lim}`;
+}
+
+if (offset !== undefined && offset !== "") {
+  const off = parseInt(offset);
+  if (!isNaN(off)) query += ` OFFSET ${off}`;
+}
 
     const [rows] = await pool.execute(query, params);
     return groupProperties(rows);
@@ -149,10 +154,7 @@ class Property {
 
   static async findByLandlordId(landlordId) {
     const [rows] = await pool.execute(
-      `SELECT p.*,
-        r.id AS roomId, r.roomNumber, r.roomType, r.capacity,
-        r.monthlyRent, r.cautionDeposit, r.isAvailable,
-        r.description AS roomDescription, r.images AS roomImages
+      `SELECT ${COLS}
        FROM properties p
        LEFT JOIN rooms r ON p.id = r.propertyId
        WHERE p.landlordId = ?
