@@ -15,8 +15,25 @@ class Room {
   }
 
   static async findByPropertyId(propertyId) {
-    const [rows] = await pool.execute("SELECT * FROM rooms WHERE propertyId = ?", [propertyId]);
-    return rows;
+    const [rows] = await pool.execute(
+      "SELECT * FROM rooms WHERE propertyId = ? ORDER BY roomNumber ASC",
+      [propertyId]
+    );
+    return rows.map((r) => ({
+      id: r.id,
+      _id: String(r.id),
+      propertyId: r.propertyId,
+      roomNumber: r.roomNumber,
+      type: r.roomType,
+      roomType: r.roomType,
+      capacity: r.capacity,
+      price: parseFloat(r.monthlyRent) || 0,
+      monthlyRent: parseFloat(r.monthlyRent) || 0,
+      cautionDeposit: r.cautionDeposit,
+      isAvailable: Boolean(r.isAvailable),
+      description: r.description || "",
+      images: (() => { try { return JSON.parse(r.images || "[]"); } catch { return []; } })(),
+    }));
   }
 
   static async update(id, { roomNumber, roomType, capacity, monthlyRent, cautionDeposit, isAvailable, description, images }) {
