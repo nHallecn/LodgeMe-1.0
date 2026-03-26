@@ -1,37 +1,26 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PropertyCard from "@/components/PropertyCard";
+import { propertiesAPI } from "@/lib/api";
+import { Property } from "@/types";
 import {
   Search, Shield, Headphones, Eye, Smartphone, Users,
   Building2, CheckCircle, ArrowRight, Star, ChevronRight,
 } from "lucide-react";
 import heroBg from "@/assets/hero-bg.jpg";
 
-const featuredProperties = [
-  { id: "1", title: "Modern Apartment in Douala", location: "Bonaberi, Douala", price: 150000, type: "Apartment" },
-  { id: "2", title: "Cozy Studio in Yaounde", location: "Bastos, Yaounde", price: 80000, type: "Studio" },
-  { id: "3", title: "Spacious Minicité Unit", location: "Molyko, Buea", price: 60000, type: "Minicité" },
-  { id: "4", title: "Luxury Villa in Limbe", location: "Mile 4, Limbe", price: 300000, type: "Villa" },
-  { id: "5", title: "Student Room in Buea", location: "Great Soppo, Buea", price: 45000, type: "Room" },
-  { id: "6", title: "Family House in Kribi", location: "Grand Batanga, Kribi", price: 200000, type: "House" },
-];
-
+// ── Static content (never changes) ──────────────────────────────────────────
 const testimonials = [
   { id: 1, name: "Alice M.", role: "Tenant", quote: "LodgeMe made finding my new apartment incredibly easy and stress-free. The listings were accurate, and connecting with landlords was seamless!" },
   { id: 2, name: "John K.", role: "Landlord", quote: "Managing my properties has never been simpler. LodgeMe's tools for invoicing and tracking payments are a game-changer for landlords in Cameroon." },
   { id: 3, name: "Sophie L.", role: "Tenant", quote: "No more fake agents! LodgeMe is a trustworthy platform that truly helps you find genuine rentals. Highly recommended!" },
-];
-
-const stats = [
-  { value: "500+", label: "Properties Listed" },
-  { value: "2,000+", label: "Happy Tenants" },
-  { value: "100+", label: "Verified Landlords" },
-  { value: "10+", label: "Cities Covered" },
 ];
 
 const features = [
@@ -52,7 +41,54 @@ const stagger = {
   visible: { transition: { staggerChildren: 0.1 } },
 };
 
+// ── Property card skeleton ───────────────────────────────────────────────────
+const PropertyCardSkeleton = () => (
+  <Card className="overflow-hidden">
+    <Skeleton className="aspect-[4/3] w-full" />
+    <CardContent className="p-4 space-y-2">
+      <Skeleton className="h-4 w-3/4" />
+      <Skeleton className="h-3 w-1/2" />
+      <Skeleton className="h-5 w-1/3 mt-2" />
+    </CardContent>
+  </Card>
+);
+
+// ── Main page ────────────────────────────────────────────────────────────────
 const Index = () => {
+  const [featuredProperties, setFeaturedProperties] = useState<Property[]>([]);
+  const [stats, setStats] = useState({ properties: "...", tenants: "2,000+", landlords: "100+", cities: "10+" });
+  const [loadingProperties, setLoadingProperties] = useState(true);
+
+  useEffect(() => {
+    const fetchFeatured = async () => {
+      try {
+        const { data } = await propertiesAPI.getAll({ limit: "6" });
+        const list: Property[] = Array.isArray(data) ? data : data.properties || [];
+        setFeaturedProperties(list);
+        // Update the live properties count from real data
+        setStats((prev) => ({
+          ...prev,
+          properties: list.length > 0 ? `${list.length}+` : "500+",
+        }));
+      } catch {
+        // API not reachable — leave array empty, show empty state
+        setFeaturedProperties([]);
+        setStats((prev) => ({ ...prev, properties: "500+" }));
+      } finally {
+        setLoadingProperties(false);
+      }
+    };
+
+    fetchFeatured();
+  }, []);
+
+  const statsDisplay = [
+    { value: stats.properties, label: "Properties Listed" },
+    { value: stats.tenants,    label: "Happy Tenants" },
+    { value: stats.landlords,  label: "Verified Landlords" },
+    { value: stats.cities,     label: "Cities Covered" },
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -64,16 +100,8 @@ const Index = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-foreground/90 via-foreground/70 to-foreground/40" />
         </div>
         <div className="relative container mx-auto px-4 py-24 md:py-36">
-          <motion.div
-            className="max-w-2xl"
-            initial="hidden"
-            animate="visible"
-            variants={stagger}
-          >
-            <motion.h1
-              variants={fadeUp}
-              className="font-display text-4xl font-bold leading-tight text-background md:text-6xl"
-            >
+          <motion.div className="max-w-2xl" initial="hidden" animate="visible" variants={stagger}>
+            <motion.h1 variants={fadeUp} className="font-display text-4xl font-bold leading-tight text-background md:text-6xl">
               Your Next Home <br />
               <span className="text-primary">Awaits</span> in Cameroon
             </motion.h1>
@@ -82,19 +110,10 @@ const Index = () => {
             </motion.p>
             <motion.div variants={fadeUp} className="mt-8 flex flex-wrap gap-4">
               <Button size="lg" asChild className="gap-2 text-base">
-                <Link to="/properties">
-                  <Search className="h-4 w-4" /> Browse Properties
-                </Link>
+                <Link to="/properties"><Search className="h-4 w-4" /> Browse Properties</Link>
               </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                asChild 
-                className="gap-2 text-base border-background/30 text-foreground hover:bg-background/10"
-              >
-                <Link to="/register">
-                  List Your Property <ArrowRight className="h-4 w-4" />
-                </Link>
+              <Button size="lg" variant="outline" asChild className="gap-2 text-base border-background/30 text-foreground hover:bg-background/10">
+                <Link to="/register">List Your Property <ArrowRight className="h-4 w-4" /></Link>
               </Button>
             </motion.div>
           </motion.div>
@@ -105,7 +124,7 @@ const Index = () => {
       <section className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-12">
           <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
-            {stats.map((stat) => (
+            {statsDisplay.map((stat) => (
               <div key={stat.label} className="text-center">
                 <p className="font-display text-3xl font-bold text-primary">{stat.value}</p>
                 <p className="mt-1 text-sm text-muted-foreground">{stat.label}</p>
@@ -131,24 +150,53 @@ const Index = () => {
               Hand-picked properties offering the best value and comfort across Cameroon.
             </p>
           </motion.div>
-          <motion.div
-            className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
-            initial="hidden" whileInView="visible" viewport={{ once: true }}
-            variants={stagger}
-          >
-            {featuredProperties.map((property) => (
-              <motion.div key={property.id} variants={fadeUp}>
-                <PropertyCard {...property} />
-              </motion.div>
-            ))}
-          </motion.div>
-          <div className="mt-10 text-center">
-            <Button variant="outline" size="lg" asChild className="gap-2">
-              <Link to="/properties">
-                View All Properties <ChevronRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
+
+          {loadingProperties ? (
+            // Skeleton grid while fetching
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <PropertyCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : featuredProperties.length > 0 ? (
+            <motion.div
+              className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+              initial="hidden" whileInView="visible" viewport={{ once: true }}
+              variants={stagger}
+            >
+              {featuredProperties.map((property) => (
+                <motion.div key={property._id || property.id} variants={fadeUp}>
+                  <PropertyCard
+                    id={String(property._id || property.id)}
+                    title={property.title || property.name}
+                    location={`${property.neighborhood || property.address || ""}, ${property.city}`}
+                    price={property.rooms?.[0]?.price ?? 0}
+                    type={property.type}
+                    imageUrl={property.images?.[0]}
+                    rooms={property.rooms?.length}
+                  />
+                </motion.div>
+              ))}
+            </motion.div>
+          ) : (
+            // Graceful empty state if API returns nothing
+            <div className="text-center py-16">
+              <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-lg font-medium text-foreground">No listings yet</p>
+              <p className="mt-1 text-sm text-muted-foreground">Be the first to list your property on LodgeMe!</p>
+              <Button asChild className="mt-6">
+                <Link to="/register">List a Property</Link>
+              </Button>
+            </div>
+          )}
+
+          {featuredProperties.length > 0 && (
+            <div className="mt-10 text-center">
+              <Button variant="outline" size="lg" asChild className="gap-2">
+                <Link to="/properties">View All Properties <ChevronRight className="h-4 w-4" /></Link>
+              </Button>
+            </div>
+          )}
         </div>
       </section>
 
@@ -235,10 +283,7 @@ const Index = () => {
       {/* CTA */}
       <section className="bg-primary py-20">
         <div className="container mx-auto px-4 text-center">
-          <motion.div
-            initial="hidden" whileInView="visible" viewport={{ once: true }}
-            variants={stagger}
-          >
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}>
             <motion.h2 variants={fadeUp} className="font-display text-3xl font-bold text-primary-foreground md:text-4xl">
               Ready to Find Your Perfect Place?
             </motion.h2>
@@ -247,14 +292,10 @@ const Index = () => {
             </motion.p>
             <motion.div variants={fadeUp} className="mt-8 flex flex-wrap justify-center gap-4">
               <Button size="lg" variant="secondary" asChild className="gap-2 text-base">
-                <Link to="/properties">
-                  <Search className="h-4 w-4" /> Find a Rental
-                </Link>
+                <Link to="/properties"><Search className="h-4 w-4" /> Find a Rental</Link>
               </Button>
               <Button size="lg" asChild className="gap-2 text-base bg-background text-foreground hover:bg-background/90">
-                <Link to="/register">
-                  <Building2 className="h-4 w-4" /> List Your Property
-                </Link>
+                <Link to="/register"><Building2 className="h-4 w-4" /> List Your Property</Link>
               </Button>
             </motion.div>
           </motion.div>

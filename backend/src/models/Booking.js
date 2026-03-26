@@ -15,12 +15,27 @@ class Booking {
   }
 
   static async findByGuestId(guestId) {
-    const [rows] = await pool.execute("SELECT * FROM bookings WHERE guestId = ?", [guestId]);
+    const [rows] = await pool.execute(
+      "SELECT * FROM bookings WHERE guestId = ? ORDER BY createdAt DESC", [guestId]
+    );
     return rows;
   }
 
   static async findByRoomId(roomId) {
     const [rows] = await pool.execute("SELECT * FROM bookings WHERE roomId = ?", [roomId]);
+    return rows;
+  }
+
+  // NEW: returns bookings for all rooms in properties owned by this landlord
+  static async findByLandlordId(landlordId) {
+    const [rows] = await pool.execute(
+      `SELECT b.* FROM bookings b
+       JOIN rooms r ON b.roomId = r.id
+       JOIN properties p ON r.propertyId = p.id
+       WHERE p.landlordId = ?
+       ORDER BY b.createdAt DESC`,
+      [landlordId]
+    );
     return rows;
   }
 
@@ -36,5 +51,3 @@ class Booking {
 }
 
 module.exports = Booking;
-
-
