@@ -15,12 +15,31 @@ class MaintenanceTicket {
   }
 
   static async findByRoomId(roomId) {
-    const [rows] = await pool.execute("SELECT * FROM maintenanceTickets WHERE roomId = ?", [roomId]);
+    const [rows] = await pool.execute(
+      "SELECT * FROM maintenanceTickets WHERE roomId = ? ORDER BY createdAt DESC",
+      [roomId]
+    );
     return rows;
   }
 
   static async findByReportedByUserId(reportedByUserId) {
-    const [rows] = await pool.execute("SELECT * FROM maintenanceTickets WHERE reportedByUserId = ?", [reportedByUserId]);
+    const [rows] = await pool.execute(
+      "SELECT * FROM maintenanceTickets WHERE reportedByUserId = ? ORDER BY createdAt DESC",
+      [reportedByUserId]
+    );
+    return rows;
+  }
+
+  // NEW: landlord sees tickets for rooms in their properties
+  static async findByLandlordId(landlordId) {
+    const [rows] = await pool.execute(
+      `SELECT mt.* FROM maintenanceTickets mt
+       JOIN rooms r ON mt.roomId = r.id
+       JOIN properties p ON r.propertyId = p.id
+       WHERE p.landlordId = ?
+       ORDER BY mt.createdAt DESC`,
+      [landlordId]
+    );
     return rows;
   }
 

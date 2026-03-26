@@ -20,12 +20,30 @@ class Invoice {
   }
 
   static async findByLandlordId(landlordId) {
-    const [rows] = await pool.execute("SELECT * FROM invoices WHERE landlordId = ?", [landlordId]);
+    const [rows] = await pool.execute(
+      "SELECT * FROM invoices WHERE landlordId = ? ORDER BY createdAt DESC",
+      [landlordId]
+    );
+    return rows;
+  }
+
+  // NEW: returns invoices for bookings belonging to this guest
+  static async findByGuestId(guestId) {
+    const [rows] = await pool.execute(
+      `SELECT i.* FROM invoices i
+       JOIN bookings b ON i.bookingId = b.id
+       WHERE b.guestId = ?
+       ORDER BY i.createdAt DESC`,
+      [guestId]
+    );
     return rows;
   }
 
   static async updateStatus(id, status, paidDate = null) {
-    const [result] = await pool.execute("UPDATE invoices SET status = ?, paidDate = ? WHERE id = ?", [status, paidDate, id]);
+    const [result] = await pool.execute(
+      "UPDATE invoices SET status = ?, paidDate = ? WHERE id = ?",
+      [status, paidDate, id]
+    );
     return result.affectedRows;
   }
 

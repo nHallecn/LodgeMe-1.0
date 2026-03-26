@@ -4,13 +4,15 @@ const {
   createVisitRequest,
   getVisitRequestById,
   getGuestVisits,
-  updateVisitStatus
+  getLandlordVisits,
+  updateVisitStatus,
 } = require("../controllers/visitRequestController");
 
 const router = express.Router();
 
-router.post("/", protect, authorize("user", "admin"), createVisitRequest);
-router.get("/my-visits", protect, getGuestVisits);
+router.post("/", protect, authorize("tenant", "admin"), createVisitRequest);
+router.get("/my-visits", protect, authorize("tenant", "admin"), getGuestVisits);
+router.get("/landlord", protect, authorize("landlord", "admin"), getLandlordVisits);
 router.get("/:id", protect, getVisitRequestById);
 router.patch("/:id/status", protect, authorize("landlord", "admin"), updateVisitStatus);
 
