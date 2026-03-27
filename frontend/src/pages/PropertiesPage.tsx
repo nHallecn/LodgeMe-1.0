@@ -9,12 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, SlidersHorizontal, Loader2 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 const PropertiesPage = () => {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
+  const { isAuthenticated, user } = useAuth();
 
   const cities = ["Douala", "Yaounde", "Buea", "Limbe", "Kribi", "Bamenda"];
 
@@ -27,7 +29,6 @@ const PropertiesPage = () => {
         const { data } = await propertiesAPI.getAll(params);
         setProperties(Array.isArray(data) ? data : data.properties || []);
       } catch {
-        // Use sample data if API is not available
         setProperties([]);
       } finally {
         setLoading(false);
@@ -94,18 +95,38 @@ const PropertiesPage = () => {
             </div>
           ) : properties.length > 0 ? (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {properties.map((property) => (
-                <PropertyCard
-                  key={property._id}
-                  id={property._id}
-                  title={property.title}
-                  location={`${property.city}, ${property.region}`}
-                  price={property.rooms?.[0]?.price || 0}
-                  type={property.type}
-                  imageUrl={property.images?.[0]}
-                  rooms={property.rooms?.length}
-                />
-              ))}
+              {properties.map((property) => {
+                const pid = String(property._id || property.id);
+                return (
+                  <div key={pid} className="flex flex-col">
+                    <PropertyCard
+                      id={pid}
+                      title={property.title || property.name}
+                      location={`${property.neighborhood || property.address || ""}, ${property.city}`}
+                      price={property.rooms?.[0]?.price ?? 0}
+                      type={property.type}
+                      imageUrl={property.images?.[0]}
+                      rooms={property.rooms?.length}
+                    />
+                    {/* Action row below card */}
+                    <div className="flex gap-2 px-1 pt-2">
+                      <Button asChild size="sm" variant="outline" className="flex-1">
+                        <Link to={`/properties/${pid}`}>View Details</Link>
+                      </Button>
+                      {isAuthenticated && user?.role === "tenant" ? (
+                        // Tenant: go straight to the detail page where rooms + booking modal are
+                        <Button asChild size="sm" className="flex-1">
+                          <Link to={`/properties/${pid}`}>Book a Room</Link>
+                        </Button>
+                      ) : !isAuthenticated ? (
+                        <Button asChild size="sm" variant="secondary" className="flex-1">
+                          <Link to="/login">Sign in to Book</Link>
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-20">

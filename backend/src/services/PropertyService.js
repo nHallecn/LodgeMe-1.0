@@ -2,8 +2,10 @@ const Property = require("../models/Property");
 const Room = require("../models/Room");
 
 class PropertyService {
-  static async createProperty(landlordId, name, city, neighborhood, latitude, longitude, description, totalRooms, amenities) {
-    return await Property.create(landlordId, name, city, neighborhood, latitude, longitude, description, totalRooms, amenities);
+  // FIX: images was missing from the parameter list — it was silently dropped,
+  // causing property cover images to never be saved.
+  static async createProperty(landlordId, name, city, neighborhood, latitude, longitude, description, totalRooms, amenities, images = []) {
+    return await Property.create(landlordId, name, city, neighborhood, latitude, longitude, description, totalRooms, amenities, images);
   }
 
   static async getPropertyById(id) {

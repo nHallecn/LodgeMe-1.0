@@ -44,8 +44,11 @@ const BookRoomModal = ({ room, propertyTitle, open, onClose }: BookRoomModalProp
     }
     setLoading(true);
     try {
+      // FIX: use numeric id (room.id || room._id) — the /rooms endpoint returns
+      // numeric ids from MySQL, not MongoDB-style _id strings.
+      const roomId = Number(room.id ?? room._id);
       await bookingsAPI.create({
-        roomId: room._id,
+        roomId,
         startDate,
         endDate: endDate || null,
       });
@@ -143,7 +146,7 @@ const VisitModal = ({ propertyId, propertyTitle, open, onClose }: VisitModalProp
     setLoading(true);
     try {
       await visitsAPI.create({
-        propertyId,
+        propertyId: Number(propertyId),   // backend expects integer FK
         requestedDate: date,
         requestedTime: time,
         notes,
@@ -232,12 +235,18 @@ const PropertyDetailPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [propRes, roomsRes] = await Promise.all([
-          propertiesAPI.getById(id!),
-          propertiesAPI.getRooms(id!),
-        ]);
-        setProperty(propRes.data);
-        setRooms(Array.isArray(roomsRes.data) ? roomsRes.data : roomsRes.data.rooms || []);
+        const propRes = await propertiesAPI.getById(id!);
+        const prop: Property = propRes.data;
+        setProperty(prop);
+
+        // FIX: prefer rooms already embedded in the property response (they have
+        // correct numeric ids). Only call getRooms as a fallback.
+        if (prop.rooms && prop.rooms.length > 0) {
+          setRooms(prop.rooms);
+        } else {
+          const roomsRes = await propertiesAPI.getRooms(id!);
+          setRooms(Array.isArray(roomsRes.data) ? roomsRes.data : roomsRes.data.rooms || []);
+        }
       } catch {
         setProperty(null);
       } finally {
@@ -342,32 +351,55 @@ const PropertyDetailPage = () => {
               <h3 className="font-display text-lg font-semibold mb-4">Available Rooms</h3>
               {rooms.length > 0 ? (
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {rooms.map((room) => (
-                    <Card key={room._id} className={!room.isAvailable ? "opacity-60" : ""}>
-                      <CardContent className="p-5">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-display font-semibold">Room {room.roomNumber}</span>
-                          <Badge variant={room.isAvailable ? "default" : "secondary"}>
-                            {room.isAvailable ? "Available" : "Occupied"}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground capitalize mb-2">{room.type}</p>
-                        <p className="font-display text-xl font-bold text-primary">
-                          XAF {room.price.toLocaleString()}<span className="text-xs font-normal text-muted-foreground">/month</span>
-                        </p>
-                        {room.isAvailable && isAuthenticated && user?.role === "tenant" && (
-                          <Button size="sm" className="mt-3 w-full" onClick={() => { setSelectedRoom(room); setBookModalOpen(true); }}>
-                            Book This Room
-                          </Button>
-                        )}
-                        {room.isAvailable && !isAuthenticated && (
-                          <Button size="sm" variant="outline" className="mt-3 w-full" asChild>
-                            <Link to="/login">Sign in to Book</Link>
-                          </Button>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
+                  {rooms.map((room) => {
+                    // FIX: rooms from the embedded property.rooms array carry a
+                    // numeric `id` field. Normalise to a stable key.
+                    const roomKey = String(room.id ?? room._id);
+                    return (
+                      <Card key={roomKey} className={!room.isAvailable ? "opacity-60" : ""}>
+                        <CardContent className="p-5">
+                          {/* Room image thumbnail */}
+                          {room.images?.[0] && (
+                            <div className="mb-3 aspect-video overflow-hidden rounded-lg bg-muted">
+                              <img src={room.images[0]} alt={`Room ${room.roomNumber}`} className="h-full w-full object-cover" />
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-display font-semibold">Room {room.roomNumber}</span>
+                            <Badge variant={room.isAvailable ? "default" : "secondary"}>
+                              {room.isAvailable ? "Available" : "Occupied"}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground capitalize mb-2">{room.type}</p>
+                          {room.capacity && (
+                            <p className="text-xs text-muted-foreground mb-1">Capacity: {room.capacity} person{room.capacity !== 1 ? "s" : ""}</p>
+                          )}
+                          <p className="font-display text-xl font-bold text-primary">
+                            XAF {room.price.toLocaleString()}<span className="text-xs font-normal text-muted-foreground">/month</span>
+                          </p>
+                          {room.cautionDeposit && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Caution: XAF {Number(room.cautionDeposit).toLocaleString()}
+                            </p>
+                          )}
+                          {room.isAvailable && isAuthenticated && user?.role === "tenant" && (
+                            <Button
+                              size="sm"
+                              className="mt-3 w-full"
+                              onClick={() => { setSelectedRoom(room); setBookModalOpen(true); }}
+                            >
+                              Book This Room
+                            </Button>
+                          )}
+                          {room.isAvailable && !isAuthenticated && (
+                            <Button size="sm" variant="outline" className="mt-3 w-full" asChild>
+                              <Link to="/login">Sign in to Book</Link>
+                            </Button>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">No rooms listed yet.</p>
@@ -420,7 +452,7 @@ const PropertyDetailPage = () => {
 
       {/* Visit request modal */}
       <VisitModal
-        propertyId={property._id}
+        propertyId={String(property._id || property.id)}
         propertyTitle={property.title}
         open={visitModalOpen}
         onClose={() => setVisitModalOpen(false)}

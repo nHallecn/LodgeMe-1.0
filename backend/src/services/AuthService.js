@@ -12,8 +12,17 @@ class AuthService {
       throw error;
     }
 
-    // Validate role
-    const validRoles = ["tenant", "landlord", "admin"];
+    // Basic email format check
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      const error = new Error("Please provide a valid email address.");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    // Validate role — "tenant" and "landlord" are self-registration roles.
+    // "admin" can only be assigned directly in the DB.
+    const validRoles = ["tenant", "landlord"];
     if (!validRoles.includes(role)) {
       const error = new Error(`Invalid role. Must be one of: ${validRoles.join(", ")}`);
       error.statusCode = 400;
@@ -23,7 +32,7 @@ class AuthService {
     // Check if user exists
     const existingUser = await User.findByEmail(email);
     if (existingUser) {
-      const error = new Error("User with this email already exists.");
+      const error = new Error("An account with this email already exists.");
       error.statusCode = 409;
       throw error;
     }
@@ -33,12 +42,9 @@ class AuthService {
 
     // Create user
     const userId = await User.create(name, email, hashedPassword, role);
-
     const user = await User.findById(userId);
 
-    // Remove sensitive data from user object
     const userResponse = this.formatUserResponse(user);
-
     const token = this.generateToken(user);
 
     return { user: userResponse, token };
@@ -54,23 +60,22 @@ class AuthService {
 
     const user = await User.findByEmail(email);
     if (!user) {
-      const error = new Error("Invalid credentials.");
+      // Use a generic message to avoid leaking whether the email exists
+      const error = new Error("Invalid email or password.");
       error.statusCode = 401;
       throw error;
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      const error = new Error("Invalid credentials.");
+      const error = new Error("Invalid email or password.");
       error.statusCode = 401;
       throw error;
     }
 
     await User.updateLastSignedIn(user.id);
 
-    // Remove sensitive data from user object
     const userResponse = this.formatUserResponse(user);
-
     const token = this.generateToken(user);
 
     return { user: userResponse, token };
