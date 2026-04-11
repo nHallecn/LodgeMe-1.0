@@ -1,4 +1,115 @@
+/**
+ * Run from your FRONTEND folder: node patch_frontend.js
+ * Fixes api.ts and TenantDashboard.tsx
+ */
+const fs = require("fs");
+const path = require("path");
 
+const src = path.join(__dirname, "src");
+
+function write(filePath, content) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, content, "utf8");
+  console.log("✅ wrote:", filePath.replace(src, "src"));
+}
+
+// ── api.ts ────────────────────────────────────────────────────────────────────
+write(path.join(src, "lib/api.ts"), `
+import axios from "axios";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: { "Content-Type": "application/json" },
+});
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) config.headers.Authorization = \`Bearer \${token}\`;
+  return config;
+}, (error) => Promise.reject(error));
+
+// Only redirect on 401 (expired/invalid token) — NOT on 403
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  }
+);
+
+export default api;
+
+export const authAPI = {
+  login:    (email: string, password: string) => api.post("/auth/login", { email, password }),
+  register: (data: { name: string; email: string; password: string; role: string }) =>
+    api.post("/auth/register", data),
+};
+
+export const propertiesAPI = {
+  getAll:        (params?: Record<string, string>) => api.get("/properties", { params }),
+  getById:       (id: string) => api.get(\`/properties/\${id}\`),
+  create:        (data: FormData | Record<string, unknown>) => api.post("/properties", data),
+  update:        (id: string, data: FormData | Record<string, unknown>) => api.put(\`/properties/\${id}\`, data),
+  delete:        (id: string) => api.delete(\`/properties/\${id}\`),
+  getByLandlord: (landlordId: string) => api.get(\`/properties/landlord/\${landlordId}\`),
+  getRooms:      (propertyId: string) => api.get(\`/properties/\${propertyId}/rooms\`),
+  getRoomById:   (roomId: string) => api.get(\`/properties/rooms/\${roomId}\`),
+  addRoom:       (propertyId: string, data: Record<string, unknown>) => api.post(\`/properties/\${propertyId}/rooms\`, data),
+  updateRoom:    (roomId: string, data: Record<string, unknown>) => api.put(\`/properties/rooms/\${roomId}\`, data),
+  deleteRoom:    (roomId: string) => api.delete(\`/properties/rooms/\${roomId}\`),
+};
+
+export const bookingsAPI = {
+  create:        (data: Record<string, unknown>) => api.post("/bookings", data),
+  getByGuest:    () => api.get("/bookings/guest"),
+  getByLandlord: () => api.get("/bookings/landlord"),
+  getById:       (id: string) => api.get(\`/bookings/\${id}\`),
+  updateStatus:  (id: string, status: string) => api.patch(\`/bookings/\${id}/status\`, { status }),
+  delete:        (id: string) => api.delete(\`/bookings/\${id}\`),
+};
+
+export const paymentsAPI = {
+  record:        (data: Record<string, unknown>) => api.post("/payments", data),
+  getByLandlord: () => api.get("/payments/landlord"),
+  getByGuest:    () => api.get("/payments/guest"),
+  getById:       (id: string) => api.get(\`/payments/\${id}\`),
+};
+
+export const invoicesAPI = {
+  create:        (data: Record<string, unknown>) => api.post("/invoices", data),
+  getByLandlord: () => api.get("/invoices/landlord"),
+  getById:       (id: string) => api.get(\`/invoices/\${id}\`),
+  updateStatus:  (id: string, status: string) => api.patch(\`/invoices/\${id}/status\`, { status }),
+};
+
+export const maintenanceAPI = {
+  create:        (data: Record<string, unknown>) => api.post("/maintenance-tickets", data),
+  getByGuest:    () => api.get("/maintenance-tickets/user"),
+  getByUser:     () => api.get("/maintenance-tickets/user"),
+  getByLandlord: () => api.get("/maintenance-tickets/landlord"),
+  getByRoom:     (roomId: string) => api.get(\`/maintenance-tickets/room/\${roomId}\`),
+  getById:       (id: string) => api.get(\`/maintenance-tickets/\${id}\`),
+  update:        (id: string, data: Record<string, unknown>) => api.put(\`/maintenance-tickets/\${id}\`, data),
+};
+
+export const visitsAPI = {
+  create:        (data: Record<string, unknown>) => api.post("/visits", data),
+  getByGuest:    () => api.get("/visits/my-visits"),
+  getMyVisits:   () => api.get("/visits/my-visits"),
+  getByLandlord: () => api.get("/visits/landlord"),
+  getById:       (id: string) => api.get(\`/visits/\${id}\`),
+  updateStatus:  (id: string, status: string) => api.patch(\`/visits/\${id}/status\`, { status }),
+};
+`);
+
+// ── TenantDashboard.tsx ───────────────────────────────────────────────────────
+write(path.join(src, "pages/tenant/TenantDashboard.tsx"), `
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -61,7 +172,7 @@ const TenantDashboard = () => {
   ];
 
   if (loading) return (
-    <DashboardLayout title="Dashboard" subtitle={`Welcome back, ${user?.name}`}>
+    <DashboardLayout title="Dashboard" subtitle={\`Welcome back, \${user?.name}\`}>
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
@@ -69,13 +180,13 @@ const TenantDashboard = () => {
   );
 
   return (
-    <DashboardLayout title="Dashboard" subtitle={`Welcome back, ${user?.name}`}>
+    <DashboardLayout title="Dashboard" subtitle={\`Welcome back, \${user?.name}\`}>
       <div className="grid grid-cols-2 gap-4 mb-6 md:grid-cols-4">
         {stats.map((stat) => (
           <Card key={stat.label}>
             <CardContent className="flex items-center gap-3 p-4">
-              <div className={`rounded-lg p-2 ${stat.bg}`}>
-                <stat.icon className={`h-5 w-5 ${stat.color}`} />
+              <div className={\`rounded-lg p-2 \${stat.bg}\`}>
+                <stat.icon className={\`h-5 w-5 \${stat.color}\`} />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stat.value}</p>
@@ -139,3 +250,6 @@ const TenantDashboard = () => {
 };
 
 export default TenantDashboard;
+`);
+
+console.log("\n✅ Done! Now restart your frontend: npm run dev");
