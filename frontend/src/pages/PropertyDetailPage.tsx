@@ -252,7 +252,7 @@ const PropertyDetailPage = () => {
             }
           </div>
           <div className="grid grid-cols-2 gap-4">
-            {[images[1], images[2], images[3], images[4]].map((img, i) => (
+            {[images[1], images[2], images[3], images[4]].map((img: string | null | undefined, i: number) => (
               <div key={i} className="aspect-square overflow-hidden rounded-xl bg-muted">
                 {img ? <img src={img} alt="" className="h-full w-full object-cover" />
                       : <div className="h-full bg-secondary" />}

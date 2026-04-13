@@ -40,7 +40,7 @@ const AddRoom = () => {
       return;
     }
     try {
-      await propertiesAPI.createRoom(propertyId, {
+      await propertiesAPI.addRoom(propertyId, {
         roomNumber:     data.roomNumber,
         roomType:       data.roomType,
         capacity:       data.capacity,
