@@ -1,0 +1,54 @@
+const pool = require("../config/db");
+
+class Booking {
+  static async create(guestId, roomId, startDate, endDate) {
+    const [result] = await pool.execute(
+      "INSERT INTO bookings (guestId, roomId, startDate, endDate) VALUES (?, ?, ?, ?)",
+      [guestId, roomId, startDate, endDate || null]
+    );
+    return result.insertId;
+  }
+
+  static async findById(id) {
+    const [rows] = await pool.execute("SELECT * FROM bookings WHERE id = ?", [id]);
+    return rows[0];
+  }
+
+  static async findByGuestId(guestId) {
+    const [rows] = await pool.execute(
+      "SELECT * FROM bookings WHERE guestId = ? ORDER BY createdAt DESC", [guestId]
+    );
+    return rows;
+  }
+
+  static async findByRoomId(roomId) {
+    const [rows] = await pool.execute("SELECT * FROM bookings WHERE roomId = ?", [roomId]);
+    return rows;
+  }
+
+  static async findByLandlordId(landlordId) {
+    const [rows] = await pool.execute(
+      `SELECT b.* FROM bookings b
+       JOIN rooms r ON b.roomId = r.id
+       JOIN properties p ON r.propertyId = p.id
+       WHERE p.landlordId = ?
+       ORDER BY b.createdAt DESC`,
+      [landlordId]
+    );
+    return rows;
+  }
+
+  static async updateStatus(id, status) {
+    const [result] = await pool.execute(
+      "UPDATE bookings SET status = ? WHERE id = ?", [status, id]
+    );
+    return result.affectedRows;
+  }
+
+  static async delete(id) {
+    const [result] = await pool.execute("DELETE FROM bookings WHERE id = ?", [id]);
+    return result.affectedRows;
+  }
+}
+
+module.exports = Booking;
