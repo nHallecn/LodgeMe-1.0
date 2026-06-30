@@ -1,142 +1,123 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { propertiesAPI } from "@/lib/api";
-import { Property } from "@/types";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { Loader2, Map, SlidersHorizontal } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PropertyCard from "@/components/PropertyCard";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, SlidersHorizontal, Loader2 } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { listingsAPI } from "@/lib/api";
+import type { Property } from "@/types";
+
+const propertyTypes = ["chambre", "studio", "apartment", "villa", "commercial"];
 
 const PropertiesPage = () => {
-  const [properties, setProperties] = useState<Property[]>([]);
+  const [params, setParams] = useSearchParams();
+  const [listings, setListings] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [selectedCity, setSelectedCity] = useState("");
-  const { isAuthenticated, user } = useAuth();
+  const [search, setSearch] = useState(params.get("search") || "");
+  const [city, setCity] = useState(params.get("city") || "");
+  const [propertyType, setPropertyType] = useState(params.get("propertyType") || "");
+  const [maxRent, setMaxRent] = useState(params.get("maxRent") || "");
 
-  const cities = ["Douala", "Yaounde", "Buea", "Limbe", "Kribi", "Bamenda"];
+  const query = useMemo(() => {
+    const next: Record<string, string> = {};
+    if (search) next.search = search;
+    if (city) next.city = city;
+    if (propertyType) next.propertyType = propertyType;
+    if (maxRent) next.maxRent = maxRent;
+    return next;
+  }, [search, city, propertyType, maxRent]);
 
   useEffect(() => {
-    const fetchProperties = async () => {
-      try {
-        const params: Record<string, string> = {};
-        if (search) params.search = search;
-        if (selectedCity) params.city = selectedCity;
-        const { data } = await propertiesAPI.getAll(params);
-        setProperties(Array.isArray(data) ? data : data.properties || []);
-      } catch {
-        setProperties([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProperties();
-  }, [search, selectedCity]);
+    setLoading(true);
+    listingsAPI.getAll(query)
+      .then(({ data }) => setListings((data as { listings?: Property[] }).listings || []))
+      .catch(() => setListings([]))
+      .finally(() => setLoading(false));
+
+    const next = new URLSearchParams(query);
+    setParams(next, { replace: true });
+  }, [query, setParams]);
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      {/* Header */}
-      <section className="border-b border-border bg-card py-12">
-        <div className="container mx-auto px-4">
-          <h1 className="font-display text-3xl font-bold text-foreground md:text-4xl">Browse Properties</h1>
-          <p className="mt-2 text-muted-foreground">Find your perfect rental across Cameroon</p>
-
-          {/* Search bar */}
-          <div className="mt-6 flex gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                className="pl-10"
-                placeholder="Search by title, location..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+      <section className="border-b bg-white">
+        <div className="container mx-auto px-4 py-8">
+          <div className="mb-6 flex flex-col justify-between gap-3 md:flex-row md:items-end">
+            <div>
+              <h1 className="font-display text-3xl font-bold">Search rentals</h1>
+              <p className="mt-1 text-muted-foreground">Filter verified listings by city, property type, and monthly rent.</p>
             </div>
+            <Button asChild>
+              <Link to="/landlord/listings/new">Submit listing</Link>
+            </Button>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-[1fr_150px_170px_150px_auto]">
+            <Input placeholder="Search neighbourhood or description" value={search} onChange={(event) => setSearch(event.target.value)} />
+            <Input placeholder="City" value={city} onChange={(event) => setCity(event.target.value)} />
+            <select value={propertyType} onChange={(event) => setPropertyType(event.target.value)} className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+              <option value="">Any type</option>
+              {propertyTypes.map((type) => <option key={type} value={type}>{type}</option>)}
+            </select>
+            <Input placeholder="Max XAF" value={maxRent} onChange={(event) => setMaxRent(event.target.value)} inputMode="numeric" />
             <Button variant="outline" className="gap-2">
               <SlidersHorizontal className="h-4 w-4" /> Filters
             </Button>
           </div>
-
-          {/* City filters */}
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Badge
-              variant={selectedCity === "" ? "default" : "secondary"}
-              className="cursor-pointer"
-              onClick={() => setSelectedCity("")}
-            >
-              All Cities
-            </Badge>
-            {cities.map((city) => (
-              <Badge
-                key={city}
-                variant={selectedCity === city ? "default" : "secondary"}
-                className="cursor-pointer"
-                onClick={() => setSelectedCity(city)}
-              >
-                {city}
-              </Badge>
-            ))}
-          </div>
         </div>
       </section>
 
-      {/* Property grid */}
-      <section className="py-12">
-        <div className="container mx-auto px-4">
+      <section className="container mx-auto grid gap-6 px-4 py-8 lg:grid-cols-[1fr_320px]">
+        <div>
+          <div className="mb-4 flex items-center justify-between">
+            <Badge variant="secondary">{listings.length} listings</Badge>
+          </div>
+
           {loading ? (
-            <div className="flex items-center justify-center py-20">
+            <div className="flex justify-center py-24">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : properties.length > 0 ? (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {properties.map((property) => {
-                const pid = String(property._id || property.id);
-                return (
-                  <div key={pid} className="flex flex-col">
-                    <PropertyCard
-                      id={pid}
-                      title={property.title || property.name}
-                      location={`${property.neighborhood || property.address || ""}, ${property.city}`}
-                      price={property.rooms?.[0]?.price ?? 0}
-                      type={property.type}
-                      imageUrl={property.images?.[0]}
-                      rooms={property.rooms?.length}
-                    />
-                    {/* Action row below card */}
-                    <div className="flex gap-2 px-1 pt-2">
-                      <Button asChild size="sm" variant="outline" className="flex-1">
-                        <Link to={`/properties/${pid}`}>View Details</Link>
-                      </Button>
-                      {isAuthenticated && user?.role === "tenant" ? (
-                        // Tenant: go straight to the detail page where rooms + booking modal are
-                        <Button asChild size="sm" className="flex-1">
-                          <Link to={`/properties/${pid}`}>Book a Room</Link>
-                        </Button>
-                      ) : !isAuthenticated ? (
-                        <Button asChild size="sm" variant="secondary" className="flex-1">
-                          <Link to="/login">Sign in to Book</Link>
-                        </Button>
-                      ) : null}
-                    </div>
-                  </div>
-                );
-              })}
+          ) : listings.length > 0 ? (
+            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              {listings.map((listing) => (
+                <PropertyCard
+                  key={listing.id || listing._id}
+                  id={String(listing.id || listing._id)}
+                  title={listing.title}
+                  location={`${listing.neighbourhood || listing.neighborhood || listing.address}, ${listing.city}`}
+                  price={listing.monthlyRent || listing.price || listing.rooms?.[0]?.price || 0}
+                  type={listing.propertyType || listing.type}
+                  imageUrl={listing.images?.[0]}
+                  rooms={listing.bedrooms}
+                />
+              ))}
             </div>
           ) : (
-            <div className="text-center py-20">
-              <p className="text-lg font-medium text-foreground">No properties found</p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Try adjusting your search or check back later for new listings.
-              </p>
+            <div className="rounded-lg border bg-card p-10 text-center">
+              <p className="font-medium">No matching listings</p>
+              <p className="mt-1 text-sm text-muted-foreground">Try another city, price range, or property type.</p>
             </div>
           )}
         </div>
+
+        <aside className="hidden rounded-lg border bg-white p-4 lg:block">
+          <div className="mb-3 flex items-center gap-2 font-medium">
+            <Map className="h-4 w-4 text-primary" /> Map area
+          </div>
+          <div className="aspect-[4/5] rounded-md bg-[linear-gradient(135deg,#dbeafe_0%,#f9fafb_45%,#dcfce7_100%)] p-4">
+            <div className="relative h-full rounded-md border border-white/80 bg-white/55 p-4 text-sm text-muted-foreground backdrop-blur">
+              <span className="absolute left-8 top-10 rounded-full bg-primary px-3 py-1 text-xs font-medium text-white">Bonamoussadi</span>
+              <span className="absolute right-8 top-28 rounded-full bg-success px-3 py-1 text-xs font-medium text-white">Bastos</span>
+              <span className="absolute bottom-20 left-12 rounded-full bg-warning px-3 py-1 text-xs font-medium text-white">Molyko</span>
+              <span className="absolute bottom-8 right-10 rounded-full bg-slate-950 px-3 py-1 text-xs font-medium text-white">Akwa</span>
+            </div>
+          </div>
+        </aside>
       </section>
 
       <Footer />

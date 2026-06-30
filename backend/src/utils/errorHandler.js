@@ -1,14 +1,22 @@
 const errorHandler = (err, req, res, next) => {
-  console.error(err.stack);
+  if (res.headersSent) return next(err);
 
-  // Determine status code
-  const statusCode = err.statusCode || 500;
+  const statusCode = err.statusCode || err.status || 500;
   const message = err.message || "Internal Server Error";
+  const code = err.code || (statusCode >= 500 ? "INTERNAL_ERROR" : "REQUEST_ERROR");
 
-  // Send error response
+  if (statusCode >= 500) {
+    console.error(err.stack || err);
+  }
+
   res.status(statusCode).json({
-    message,
-    ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
+    success: false,
+    error: {
+      code,
+      message,
+      ...(err.field ? { field: err.field } : {}),
+      ...(process.env.NODE_ENV === "development" && err.stack ? { stack: err.stack } : {}),
+    },
   });
 };
 

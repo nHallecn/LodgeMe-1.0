@@ -6,5 +6,5 @@ if (!process.env.JWT_SECRET && process.env.NODE_ENV === "production") {
 
 module.exports = {
   jwtSecret: process.env.JWT_SECRET || "supersecretjwtkey_dev_only",
-  jwtExpiration: "7d",
+  jwtExpiration: process.env.JWT_EXPIRES_IN || "15m",
 };

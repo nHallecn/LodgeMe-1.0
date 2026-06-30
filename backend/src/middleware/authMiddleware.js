@@ -10,7 +10,7 @@ exports.protect = async (req, res, next) => {
       token = req.headers.authorization.split(" ")[1];
       const decoded = jwt.verify(token, config.jwtSecret);
       req.user = await User.findById(decoded.id);
-      if (!req.user) {
+      if (!req.user || req.user.isBanned) {
         return res.status(401).json({ message: "Not authorized, user not found" });
       }
       return next();
@@ -26,7 +26,9 @@ exports.protect = async (req, res, next) => {
 
 exports.authorize = (...roles) => {
   return (req, res, next) => {
-    if (!req.user || !roles.includes(req.user.role)) {
+    const allowed = new Set(roles);
+    if (req.user?.role === "super_admin") return next();
+    if (!req.user || !allowed.has(req.user.role)) {
       return res.status(403).json({
         message: `User role ${req.user ? req.user.role : "unknown"} is not authorized to access this route`,
       });

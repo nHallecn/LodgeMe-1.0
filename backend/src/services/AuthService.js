@@ -1,84 +1,116 @@
 const jwt = require("jsonwebtoken");
-const bcrypt = require("bcrypt");
+const crypto = require("crypto");
 const User = require("../models/User");
 const config = require("../config/config");
+const { normalizeCameroonPhone } = require("../utils/phone");
+
+const otpStore = new Map();
+
+function makeError(message, statusCode, code, field) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  error.code = code;
+  error.field = field;
+  return error;
+}
+
+function generateOtp() {
+  if (process.env.RENTCAM_DEV_OTP && process.env.NODE_ENV !== "production") {
+    return process.env.RENTCAM_DEV_OTP;
+  }
+  return String(crypto.randomInt(100000, 1000000));
+}
 
 class AuthService {
-  static async registerUser(name, email, password, role) {
-    // Validate input
-    if (!name || !email || !password || !role) {
-      const error = new Error("All fields are required: name, email, password, role");
-      error.statusCode = 400;
-      throw error;
-    }
+  static async requestOtp(phoneInput) {
+    const phone = normalizeCameroonPhone(phoneInput);
+    const code = generateOtp();
 
-    // Basic email format check
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      const error = new Error("Please provide a valid email address.");
-      error.statusCode = 400;
-      throw error;
-    }
+    otpStore.set(phone, {
+      code,
+      attempts: 0,
+      expiresAt: Date.now() + 10 * 60 * 1000,
+      blockedUntil: null,
+    });
 
-    // Validate role — "tenant" and "landlord" are self-registration roles.
-    // "admin" can only be assigned directly in the DB.
-    const validRoles = ["tenant", "landlord"];
-    if (!validRoles.includes(role)) {
-      const error = new Error(`Invalid role. Must be one of: ${validRoles.join(", ")}`);
-      error.statusCode = 400;
-      throw error;
-    }
+    // Production should send this through Africa's Talking. During defence/dev,
+    // returning the code keeps the flow testable without paid SMS credentials.
+    console.info(`RentCam OTP for ${phone}: ${code}`);
 
-    // Check if user exists
-    const existingUser = await User.findByEmail(email);
-    if (existingUser) {
-      const error = new Error("An account with this email already exists.");
-      error.statusCode = 409;
-      throw error;
-    }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create user
-    const userId = await User.create(name, email, hashedPassword, role);
-    const user = await User.findById(userId);
-
-    const userResponse = this.formatUserResponse(user);
-    const token = this.generateToken(user);
-
-    return { user: userResponse, token };
+    return {
+      phone,
+      expiresInSeconds: 600,
+      ...(process.env.NODE_ENV !== "production" ? { devCode: code } : {}),
+    };
   }
 
-  static async loginUser(email, password) {
-    // Validate input
-    if (!email || !password) {
-      const error = new Error("Email and password are required");
-      error.statusCode = 400;
-      throw error;
+  static async verifyOtp({ phone: phoneInput, code, fullName, role = "tenant", city, preferredLang }) {
+    const phone = normalizeCameroonPhone(phoneInput);
+    const record = otpStore.get(phone);
+    const selfRegistrationRoles = ["tenant", "landlord", "agent"];
+
+    if (!record) {
+      throw makeError("Request a fresh OTP before verifying.", 400, "OTP_NOT_FOUND", "code");
     }
 
-    const user = await User.findByEmail(email);
-    if (!user) {
-      // Use a generic message to avoid leaking whether the email exists
-      const error = new Error("Invalid email or password.");
-      error.statusCode = 401;
-      throw error;
+    if (record.blockedUntil && record.blockedUntil > Date.now()) {
+      throw makeError("Too many OTP attempts. Try again in one hour.", 429, "OTP_BLOCKED", "code");
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      const error = new Error("Invalid email or password.");
-      error.statusCode = 401;
-      throw error;
+    if (record.expiresAt < Date.now()) {
+      otpStore.delete(phone);
+      throw makeError("OTP expired. Request a new code.", 400, "OTP_EXPIRED", "code");
     }
 
-    await User.updateLastSignedIn(user.id);
+    if (String(code) !== record.code) {
+      record.attempts += 1;
+      if (record.attempts >= 3) {
+        record.blockedUntil = Date.now() + 60 * 60 * 1000;
+      }
+      throw makeError("Invalid OTP code.", 401, "OTP_INVALID", "code");
+    }
 
-    const userResponse = this.formatUserResponse(user);
+    otpStore.delete(phone);
+
+    if (!selfRegistrationRoles.includes(role)) {
+      throw makeError("Role must be tenant, landlord, or agent.", 400, "INVALID_ROLE", "role");
+    }
+
+    const existing = await User.findByPhone(phone);
+    const user = await User.upsertFromOtp({
+      phone,
+      fullName: fullName || existing?.fullName || "",
+      role: existing?.role || role,
+      city: city || existing?.city || "",
+      preferredLang: preferredLang || existing?.preferredLang || "fr",
+    });
     const token = this.generateToken(user);
 
-    return { user: userResponse, token };
+    return {
+      user: this.formatUserResponse(user),
+      token,
+      accessToken: token,
+      refreshToken: null,
+      isNew: !existing,
+    };
+  }
+
+  static async registerUser() {
+    throw makeError(
+      "RentCam uses phone OTP. Call /api/v1/auth/request-otp then /api/v1/auth/verify-otp.",
+      410,
+      "PASSWORD_AUTH_DISABLED",
+      "phone"
+    );
+  }
+
+  static async loginUser() {
+    throw makeError(
+      "RentCam uses phone OTP. Call /api/v1/auth/request-otp then /api/v1/auth/verify-otp.",
+      410,
+      "PASSWORD_AUTH_DISABLED",
+      "phone"
+    );
   }
 
   static generateToken(user) {
@@ -93,20 +125,23 @@ class AuthService {
     try {
       return jwt.verify(token, config.jwtSecret);
     } catch {
-      const error = new Error("Invalid or expired token.");
-      error.statusCode = 401;
-      throw error;
+      throw makeError("Invalid or expired token.", 401, "TOKEN_INVALID");
     }
   }
 
   static formatUserResponse(user) {
-    // Return only safe fields to the frontend
     return {
       id: user.id,
       name: user.name,
-      email: user.email,
+      fullName: user.fullName || user.name,
+      email: user.email || "",
       role: user.role,
-      phone: user.phone || null,
+      phone: user.phone,
+      city: user.city || "",
+      avatarUrl: user.avatarUrl || "",
+      isVerified: Boolean(user.isVerified),
+      trustScore: user.trustScore,
+      preferredLang: user.preferredLang || "fr",
     };
   }
 }

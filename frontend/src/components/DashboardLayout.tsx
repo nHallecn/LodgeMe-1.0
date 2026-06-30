@@ -45,7 +45,7 @@ const DashboardLayout = ({ children, title, subtitle }: DashboardLayoutProps) =>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
               <Home className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="font-display text-lg font-bold">LodgeMe</span>
+            <span className="font-display text-lg font-bold">RentCam</span>
           </Link>
         </div>
         <nav className="flex flex-1 flex-col gap-1 p-4">
@@ -90,7 +90,7 @@ const DashboardLayout = ({ children, title, subtitle }: DashboardLayoutProps) =>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
               <Home className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="font-display font-bold">LodgeMe</span>
+            <span className="font-display font-bold">RentCam</span>
           </Link>
         </header>
         <div className="flex gap-1 overflow-x-auto border-b border-border bg-card p-2 lg:hidden">

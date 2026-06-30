@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -15,7 +15,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 25% 10%;
 
-    --primary: 165 60% 40%;
+    --primary: 202 73% 38%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 14% 96%;
@@ -24,7 +24,7 @@
     --muted: 220 14% 96%;
     --muted-foreground: 220 10% 46%;
 
-    --accent: 30 90% 55%;
+    --accent: 38 92% 50%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
@@ -32,13 +32,13 @@
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 165 60% 40%;
+    --ring: 202 73% 38%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
     --sidebar-background: 220 25% 10%;
     --sidebar-foreground: 220 14% 96%;
-    --sidebar-primary: 165 60% 40%;
+    --sidebar-primary: 202 73% 38%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 20% 16%;
     --sidebar-accent-foreground: 220 14% 96%;
@@ -63,7 +63,7 @@
     --popover: 220 25% 10%;
     --popover-foreground: 210 20% 98%;
 
-    --primary: 165 60% 45%;
+    --primary: 202 73% 46%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 20% 16%;
@@ -80,11 +80,11 @@
 
     --border: 220 20% 18%;
     --input: 220 20% 18%;
-    --ring: 165 60% 45%;
+    --ring: 202 73% 46%;
 
     --sidebar-background: 220 30% 5%;
     --sidebar-foreground: 210 20% 98%;
-    --sidebar-primary: 165 60% 45%;
+    --sidebar-primary: 202 73% 46%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 25% 12%;
     --sidebar-accent-foreground: 210 20% 98%;
@@ -103,12 +103,12 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
   }
 }
 
 @layer utilities {
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-success;
   }
 }

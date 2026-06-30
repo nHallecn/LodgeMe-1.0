@@ -54,7 +54,7 @@ function attachRooms(properties, rooms) {
     prop.rooms.push(normaliseRoom(room));
     if (prop.type === "Property" && room.roomType) prop.type = room.roomType;
   }
-  // Sort in JS — no MySQL sort buffer needed
+  // Sort in JS for legacy compatibility.
   for (const prop of map.values()) {
     prop.rooms.sort((a, b) => a.roomNumber.localeCompare(b.roomNumber));
   }

@@ -1,37 +1,36 @@
 const AuthService = require("../services/AuthService");
+const User = require("../models/User");
+const { sendSuccess, asyncHandler } = require("../utils/apiResponse");
 
-exports.register = async (req, res, next) => {
-  try {
-    const { name, email, password, role } = req.body;
+exports.requestOtp = asyncHandler(async (req, res) => {
+  const result = await AuthService.requestOtp(req.body.phone);
+  return sendSuccess(res, result);
+});
 
-    // Validate required fields
-    if (!name || !email || !password || !role) {
-      return res.status(400).json({
-        message: "Missing required fields: name, email, password, role",
-      });
-    }
+exports.verifyOtp = asyncHandler(async (req, res) => {
+  const result = await AuthService.verifyOtp(req.body);
+  return sendSuccess(res, result);
+});
 
-    const { user, token } = await AuthService.registerUser(name, email, password, role);
-    res.status(201).json({ message: "User registered successfully", user, token });
-  } catch (error) {
-    next(error);
-  }
-};
+exports.me = asyncHandler(async (req, res) => {
+  return sendSuccess(res, { user: AuthService.formatUserResponse(req.user) });
+});
 
-exports.login = async (req, res, next) => {
-  try {
-    const { email, password } = req.body;
+exports.updateMe = asyncHandler(async (req, res) => {
+  const user = await User.updateProfile(req.user.id, req.body);
+  return sendSuccess(res, { user: AuthService.formatUserResponse(user) });
+});
 
-    // Validate required fields
-    if (!email || !password) {
-      return res.status(400).json({
-        message: "Missing required fields: email, password",
-      });
-    }
+exports.logout = asyncHandler(async (_req, res) => {
+  return sendSuccess(res, { message: "Logged out" });
+});
 
-    const { user, token } = await AuthService.loginUser(email, password);
-    res.status(200).json({ message: "Logged in successfully", user, token });
-  } catch (error) {
-    next(error);
-  }
-};
+exports.register = asyncHandler(async (req, res) => {
+  const { user, token } = await AuthService.registerUser(req.body);
+  return sendSuccess(res, { user, token }, undefined, 201);
+});
+
+exports.login = asyncHandler(async (req, res) => {
+  const { user, token } = await AuthService.loginUser(req.body);
+  return sendSuccess(res, { user, token });
+});

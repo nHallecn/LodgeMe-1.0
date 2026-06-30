@@ -1,142 +1,93 @@
-# LodgeMe - Rental Marketplace Platform for Cameroon
+# RentCam
 
-LodgeMe is a modern, high-end rental marketplace designed specifically for the Cameroonian market. It addresses key challenges like "fake agent" scams and manual bookkeeping, providing a transparent and efficient platform for both landlords and tenants.
+RentCam is a Cameroon-focused rental marketplace rebuilt from the original LodgeMe defence project. The revised version follows the RentCam architecture document: phone OTP identity, verified listings, landlord/agent dashboards, tenant inquiries, admin verification, and PostgreSQL/PostGIS storage.
 
-## 🌟 Key Features
-okay
-### For Tenants
+## Current MVP Scope
 
-* **Advanced Property Search:** Find rentals by city, neighborhood, price range, and room type.
-* **Interactive Map View:** Visually locate available rentals using Leaflet.js and OpenStreetMap.
-* **Schedule Physical Visits:** Request and manage physical property viewings directly through the platform.
-* **Secure Bookings:** Book rooms and track your rental status seamlessly.
-* **Maintenance Tracking:** Report and monitor maintenance issues in your rented space.
-* **Digital Payments:** View payment history and receive digital receipts.
+- Phone OTP auth for tenants, landlords, and agents
+- PostgreSQL schema with UUIDs, enums, listing photos, inquiries, leases, payments, reviews, and admin support tables
+- Public listing search and detail pages
+- Tenant inquiry flow with WhatsApp CTA
+- Landlord listing submission and inquiry inbox
+- Admin listing verification queue
+- Legacy `/api/properties` compatibility while the frontend moves to `/api/v1/listings`
 
-### For Landlords
+Payments, digital leases, Redis-backed OTP/session storage, R2 uploads, and mobile apps are prepared in the schema/API shape but are Phase 2 work.
 
-* **Property Management:** Easily list and manage multiple properties and "minicités".
-* **Room Management:** Add, edit, and track the status of individual rooms within your properties.
-* **Automated Invoicing:** Generate and manage invoices for your tenants.
-* **Payment Tracking:** Record offline payments and track pending balances.
-* **Maintenance Management:** Receive and manage maintenance requests from tenants.
-* **Dashboard Analytics:** Get a high-level overview of your property performance and financials.
+## Stack
 
-## 🛠️ Tech Stack
+- Frontend: Vite, React, TypeScript, Tailwind CSS, shadcn/Radix UI
+- Backend: Node.js, Express 5, JWT, PostgreSQL via `pg`
+- Database: PostgreSQL 16 with PostGIS and `pgcrypto`
+- Architecture source: `RentCam_Architecture_Document.pdf`
 
-* **Frontend:** [Next.js](https://nextjs.org/) (App Router), [Tailwind CSS](https://tailwindcss.com/), [Leaflet.js](https://leafletjs.com/), [React Icons](https://react-icons.github.io/react-icons/)
-* **Backend:** [Node.js](https://nodejs.org/), [Express](https://expressjs.com/), [MySQL](https://www.mysql.com/)
-* **Authentication:** JSON Web Tokens (JWT)
-* **Database:** MySQL with `mysql2` driver
+## Setup
 
-## 🚀 Getting Started
+### PostgreSQL
 
-### Prerequisites
-
-* Node.js (v18 or higher)
-* npm or pnpm
-* MySQL Server
-
-### 1\. Clone the Repository
+Create a database and run the schema:
 
 ```bash
-git clone https://github.com/nHallecn/LodgeMe-1.0
-cd lodgeme-project
+createdb rentcam_db
+psql "postgresql://postgres:password@localhost:5432/rentcam_db" -f backend/db/schema.sql
 ```
 
-### 2\. Database Setup
-
-1. Create a MySQL database named `lodgeme\_db`.
-2. Run the provided SQL script (`backend/LodgeMe\_Complete\_Database\_Setup.sql`) to create the necessary tables and structure.
-
-### 3\. Backend Setup
-
-1. Navigate to the backend directory:
-
-```bash
-   cd backend
-   ```
-
-2. Install dependencies:
-
-```bash
-   npm install
-   ```
-
-3. Create a `.env` file and configure your environment variables:
+Backend environment:
 
 ```env
-   PORT=5000
-   DB\_HOST=localhost
-   DB\_USER=your\_mysql\_user
-   DB\_PASSWORD=your\_mysql\_password
-   DB\_NAME=lodgeme\_db
-   JWT\_SECRET=your\_very\_strong\_jwt\_secret
-   ```
+PORT=5000
+DATABASE_URL=postgresql://postgres:password@localhost:5432/rentcam_db
+JWT_SECRET=replace_me
+JWT_EXPIRES_IN=15m
+CORS_ORIGINS=http://localhost:5173,http://localhost:8080,http://localhost:8081
+RENTCAM_DEV_OTP=123456
+```
 
-4. Start the backend server:
+`RENTCAM_DEV_OTP` is useful for demos. In production, OTP delivery should be wired to Africa's Talking and OTP/session state moved to Redis as described in the architecture document.
 
-```bash
-   npm start
-   ```
-
-### 4\. Frontend Setup
-
-1. Navigate to the frontend directory:
+### Backend
 
 ```bash
-   cd ../frontend
-   ```
+cd backend
+npm install
+npm run dev
+```
 
-2. Install dependencies:
+### Frontend
 
 ```bash
-   npm install
-   ```
+cd frontend
+npm install
+npm run dev
+```
 
-3. Create a `.env.local` file and configure your environment variables:
+Frontend environment:
 
 ```env
-   NEXT\_PUBLIC\_API\_BASE\_URL=http://localhost:5000/api
-   ```
-
-4. Place your static assets (images, icons) in the `public/` directory as described in the project documentation.
-5. Start the frontend development server:
-
-```bash
-   npm run dev
-   ```
-
-## 📂 Project Structure
-
-```
-lodgeme-project/
-├── backend/                # Node.js/Express API
-│   ├── src/
-│   │   ├── config/         # Database and app configuration
-│   │   ├── controllers/    # API request handlers
-│   │   ├── middleware/     # Auth and error handling
-│   │   ├── models/         # Database models
-│   │   ├── routes/         # API route definitions
-│   │   ├── services/       # Business logic
-│   │   └── utils/          # Utility functions
-│   └── server.js           # Entry point
-└── frontend/               # Next.js Application
-    ├── public/             # Static assets (images, icons)
-    ├── src/
-    │   ├── app/            # Next.js App Router (pages, layouts)
-    │   ├── components/     # Reusable UI components
-    │   ├── context/        # Global state (AuthContext)
-    │   ├── lib/            # API client (Axios)
-    │   └── styles/         # Global CSS and Tailwind config
-    └── next.config.js      # Next.js configuration
+VITE_API_BASE_URL=http://localhost:5000/api/v1
 ```
 
-## 📝 License
+## Main Routes
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+- Web: `/`, `/listings`, `/listings/:id`
+- Auth: `/auth/login`, `/auth/register`
+- Tenant: `/tenant/dashboard`
+- Landlord/Agent: `/landlord/dashboard`, `/landlord/listings/new`, `/landlord/inquiries`
+- Admin: `/admin`, `/admin/listings/queue`
 
-## 🤝 Contributing
+## API Routes
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+- `POST /api/v1/auth/request-otp`
+- `POST /api/v1/auth/verify-otp`
+- `GET /api/v1/listings`
+- `POST /api/v1/listings`
+- `GET /api/v1/listings/:id`
+- `POST /api/v1/listings/:id/inquiries`
+- `GET /api/v1/inquiries/mine`
+- `GET /api/v1/inquiries/landlord`
+- `GET /api/v1/admin/listings/queue`
+- `PATCH /api/v1/admin/listings/:id/verify`
 
+## Notes
+
+The old MySQL setup file is retained only as historical LodgeMe context. Use `backend/db/schema.sql` for RentCam.

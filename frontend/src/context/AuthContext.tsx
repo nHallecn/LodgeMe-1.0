@@ -37,8 +37,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const dashboardRoutes: Record<UserRole, string> = {
       landlord: "/landlord/dashboard",
+      agent: "/landlord/dashboard",
       tenant: "/tenant/dashboard",
-      admin: "/admin/dashboard",
+      admin: "/admin",
+      super_admin: "/admin",
     };
     navigate(dashboardRoutes[userData.role] || "/");
   }, [navigate]);

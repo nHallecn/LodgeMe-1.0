@@ -1,111 +1,170 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { Building2, KeyRound, Loader2, Phone } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { authAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Home, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import type { User } from "@/types";
 
-const LoginPage = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+type LoginPageProps = {
+  mode?: "login" | "register";
+};
+
+const LoginPage = ({ mode = "login" }: LoginPageProps) => {
+  const isRegister = mode === "register";
   const { login } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const [step, setStep] = useState<"phone" | "code">("phone");
+  const [phone, setPhone] = useState("");
+  const [code, setCode] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [city, setCity] = useState("");
+  const [role, setRole] = useState("tenant");
+  const [devCode, setDevCode] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const requestOtp = async (event: React.FormEvent) => {
+    event.preventDefault();
     setLoading(true);
     try {
-      const { data } = await authAPI.login(email, password);
-      login(data.token, data.user);
-    } catch (err: any) {
-      toast({
-        title: "Login Failed",
-        description: err.response?.data?.message || "Invalid credentials. Please try again.",
-        variant: "destructive",
+      const { data } = await authAPI.requestOtp(phone);
+      setDevCode(String((data as { devCode?: string }).devCode || ""));
+      setStep("code");
+      toast({ title: "OTP sent", description: "Check your SMS messages." });
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: { message?: string } } } };
+      toast({ title: "Could not send OTP", description: err.response?.data?.error?.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyOtp = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
+    try {
+      const { data } = await authAPI.verifyOtp({
+        phone,
+        code,
+        fullName,
+        city,
+        role,
+        preferredLang: "fr",
       });
+      const payload = data as { token?: string; accessToken?: string; user: User };
+      login(payload.token || payload.accessToken || "", payload.user);
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: { message?: string } } } };
+      toast({ title: "OTP verification failed", description: err.response?.data?.error?.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen">
-      {/* Left side - decorative */}
-      <div className="hidden w-1/2 bg-primary lg:flex lg:flex-col lg:items-center lg:justify-center lg:p-12">
-        <div className="max-w-md text-center">
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-foreground/20">
-            <Home className="h-8 w-8 text-primary-foreground" />
+    <div className="grid min-h-screen bg-background lg:grid-cols-[0.9fr_1.1fr]">
+      <aside className="hidden bg-slate-950 p-10 text-white lg:flex lg:flex-col lg:justify-between">
+        <Link to="/" className="flex items-center gap-2">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
+            <Building2 className="h-5 w-5" />
           </div>
-          <h2 className="font-display text-3xl font-bold text-primary-foreground">Welcome Back to LodgeMe</h2>
-          <p className="mt-4 text-primary-foreground/70 leading-relaxed">
-            Manage your properties, track payments, and connect with tenants — all from one dashboard.
+          <span className="font-display text-xl font-bold">RentCam</span>
+        </Link>
+        <div>
+          <h1 className="font-display text-4xl font-bold">Phone-first rental access for Cameroon.</h1>
+          <p className="mt-4 max-w-md text-white/70">
+            Use one Cameroon number to search, inquire, list property, and manage verification workflows.
           </p>
         </div>
-      </div>
+      </aside>
 
-      {/* Right side - form */}
-      <div className="flex w-full items-center justify-center p-6 lg:w-1/2">
+      <main className="flex items-center justify-center p-6">
         <div className="w-full max-w-md">
-          <div className="mb-8 lg:hidden">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-                <Home className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <span className="font-display text-xl font-bold">LodgeMe</span>
-            </Link>
-          </div>
+          <Link to="/" className="mb-8 flex items-center gap-2 lg:hidden">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Building2 className="h-5 w-5" />
+            </div>
+            <span className="font-display text-xl font-bold">RentCam</span>
+          </Link>
 
-          <Card className="border-border shadow-lg">
-            <CardHeader className="space-y-1">
-              <CardTitle className="font-display text-2xl">Sign In</CardTitle>
-              <CardDescription>Enter your credentials to access your account</CardDescription>
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-display text-2xl">{isRegister ? "Create RentCam account" : "Sign in with phone"}</CardTitle>
+              <CardDescription>{step === "phone" ? "Enter your Cameroon number to receive a 6-digit code." : "Enter the OTP code to continue."}</CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {loading ? "Signing in..." : "Sign In"}
-                </Button>
-              </form>
+              {step === "phone" ? (
+                <form onSubmit={requestOtp} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone number</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input id="phone" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+237671234567" className="pl-9" required />
+                    </div>
+                  </div>
+                  {isRegister && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="fullName">Full name</Label>
+                        <Input id="fullName" value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Your name" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="city">City</Label>
+                        <Input id="city" value={city} onChange={(event) => setCity(event.target.value)} placeholder="Douala" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Profile type</Label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {["tenant", "landlord", "agent"].map((item) => (
+                            <button
+                              key={item}
+                              type="button"
+                              onClick={() => setRole(item)}
+                              className={`rounded-md border px-3 py-2 text-sm capitalize ${role === item ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
+                            >
+                              {item}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  <Button type="submit" className="w-full gap-2" disabled={loading}>
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+                    Send OTP
+                  </Button>
+                </form>
+              ) : (
+                <form onSubmit={verifyOtp} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="code">OTP code</Label>
+                    <Input id="code" value={code} onChange={(event) => setCode(event.target.value)} inputMode="numeric" maxLength={6} placeholder="123456" required />
+                    {devCode && <p className="text-xs text-muted-foreground">Development code: {devCode}</p>}
+                  </div>
+                  <Button type="submit" className="w-full gap-2" disabled={loading}>
+                    {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                    Verify and continue
+                  </Button>
+                  <Button type="button" variant="ghost" className="w-full" onClick={() => setStep("phone")}>
+                    Change phone number
+                  </Button>
+                </form>
+              )}
+
               <p className="mt-6 text-center text-sm text-muted-foreground">
-                Don't have an account?{" "}
-                <Link to="/register" className="font-medium text-primary hover:underline">
-                  Register here
+                {isRegister ? "Already have an account?" : "New to RentCam?"}{" "}
+                <Link to={isRegister ? "/auth/login" : "/auth/register"} className="font-medium text-primary hover:underline">
+                  {isRegister ? "Sign in" : "Create account"}
                 </Link>
               </p>
             </CardContent>
           </Card>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

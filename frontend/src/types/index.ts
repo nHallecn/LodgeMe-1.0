@@ -1,11 +1,17 @@
-export type UserRole = "landlord" | "tenant" | "admin";
+export type UserRole = "landlord" | "tenant" | "agent" | "admin" | "super_admin";
 
 export interface User {
   id: string;
   name: string;
-  email: string;
+  fullName?: string;
+  email?: string;
   role: UserRole;
   phone?: string;
+  city?: string;
+  avatarUrl?: string;
+  isVerified?: boolean;
+  trustScore?: number;
+  preferredLang?: "fr" | "en";
 }
 
 export interface Property {
@@ -15,15 +21,37 @@ export interface Property {
   name?: string;
   description: string;
   address: string;
+  addressRaw?: string;
   neighborhood?: string;
+  neighbourhood?: string;
   city: string;
   region: string;
   type: string;
+  propertyType?: string;
+  status?: "pending_review" | "available" | "rented" | "reserved" | "hidden" | "rejected";
   landlord: string | User;
+  landlordId?: string;
+  landlordName?: string;
+  landlordPhone?: string;
+  agentId?: string;
   rooms: Room[];
   images: string[];
+  photos?: { id: string; url: string; thumbnailUrl?: string; isCover?: boolean }[];
   amenities: string[];
-  totalRooms?: number;        // ← added: raw DB field
+  rules?: string[];
+  utilities?: string[];
+  furnished?: "furnished" | "semi_furnished" | "unfurnished";
+  monthlyRent?: number;
+  price?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  areaSqm?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  advanceMonths?: number;
+  cautionMonths?: number;
+  virtualTourUrl?: string;
+  totalRooms?: number;
   occupiedRooms?: number;
   createdAt: string;
   updatedAt: string;
@@ -47,6 +75,25 @@ export interface Room {
   images: string[];
 }
 
+export interface Inquiry {
+  id: string;
+  _id?: string;
+  propertyId: string;
+  listingId?: string;
+  tenantId: string;
+  tenantName?: string;
+  tenantPhone?: string;
+  listingTitle?: string;
+  message: string;
+  desiredMoveIn?: string;
+  durationMonths?: number;
+  status: "sent" | "read" | "replied" | "viewing_scheduled" | "closed";
+  viewingDate?: string;
+  landlordReply?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export interface Booking {
   _id: string;
   guest: string | User;
@@ -54,7 +101,6 @@ export interface Booking {
   property: string | Property;
   checkIn: string;
   checkOut: string;
-  // "active" added — DB uses active, frontend type was missing it
   status: "pending" | "active" | "confirmed" | "cancelled" | "completed";
   totalPrice: number;
   createdAt: string;
