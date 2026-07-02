@@ -111,7 +111,7 @@ const NewPropertyForm = () => {
   };
 
   return (
-    <DashboardLayout title="Add New Property" subtitle="List a new property on RentCam">
+    <DashboardLayout title="Add New Property" subtitle="List a new property on LodgMe">
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <Card>

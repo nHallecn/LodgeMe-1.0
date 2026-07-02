@@ -11,9 +11,9 @@ import RegisterPage from "./pages/RegisterPage";
 import PropertiesPage from "./pages/PropertiesPage";
 import PropertyDetailPage from "./pages/PropertyDetailPage";
 import DashboardPage from "./pages/DashboardPage";
-import RentCamLandlordDashboard from "./pages/landlord/RentCamLandlordDashboard";
-import RentCamListingForm from "./pages/landlord/RentCamListingForm";
-import RentCamInquiries from "./pages/landlord/RentCamInquiries";
+import LodgMeLandlordDashboard from "./pages/landlord/LodgMeLandlordDashboard";
+import LodgMeListingForm from "./pages/landlord/LodgMeListingForm";
+import LodgMeInquiries from "./pages/landlord/LodgMeInquiries";
 import AdminListingQueue from "./pages/admin/AdminListingQueue";
 import NotFound from "./pages/NotFound";
 
@@ -34,10 +34,10 @@ const AppRoutes = () => (
 
     <Route path="/dashboard" element={<DashboardPage />} />
     <Route path="/tenant/dashboard" element={<DashboardPage />} />
-    <Route path="/landlord/dashboard" element={<RentCamLandlordDashboard />} />
-    <Route path="/landlord/listings/new" element={<RentCamListingForm />} />
-    <Route path="/landlord/properties/new" element={<RentCamListingForm />} />
-    <Route path="/landlord/inquiries" element={<RentCamInquiries />} />
+    <Route path="/landlord/dashboard" element={<LodgMeLandlordDashboard />} />
+    <Route path="/landlord/listings/new" element={<LodgMeListingForm />} />
+    <Route path="/landlord/properties/new" element={<LodgMeListingForm />} />
+    <Route path="/landlord/inquiries" element={<LodgMeInquiries />} />
 
     <Route path="/admin" element={<AdminListingQueue />} />
     <Route path="/admin/listings/queue" element={<AdminListingQueue />} />

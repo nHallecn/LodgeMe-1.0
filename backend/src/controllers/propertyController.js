@@ -12,7 +12,7 @@ exports.getRoomById = listingController.getListingRooms;
 
 const phaseTwo = asyncHandler(async (_req, res) => {
   return sendSuccess(res, {
-    message: "Separate rooms were removed in RentCam Phase 1. Each property is now a listing.",
+    message: "Separate rooms were removed in the LodgMe Phase 1 rebuild. Each property is now a listing.",
   }, undefined, 410);
 });
 

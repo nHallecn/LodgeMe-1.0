@@ -42,7 +42,7 @@ app.get("/health", (_req, res) => {
   res.json({
     success: true,
     data: {
-      name: "RentCam API",
+      name: "LodgMe API",
       status: "ok",
       version: "1.0.0",
     },
@@ -76,4 +76,4 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`RentCam API running on port ${PORT}`));
+app.listen(PORT, () => console.log(`LodgMe API running on port ${PORT}`));

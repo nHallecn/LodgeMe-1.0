@@ -22,7 +22,7 @@ const PropertyCard = ({ id, imageUrl, title, location, price, type, rooms }: Pro
             <img src={imageUrl} alt={title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
           ) : (
             <div className="flex h-full items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20">
-              <span className="font-display text-lg font-bold text-muted-foreground">RentCam</span>
+              <span className="font-display text-lg font-bold text-muted-foreground">LodgMe</span>
             </div>
           )}
           {type && (

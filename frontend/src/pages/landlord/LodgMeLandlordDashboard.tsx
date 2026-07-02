@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { inquiriesAPI, listingsAPI } from "@/lib/api";
 import type { Inquiry, Property } from "@/types";
 
-const RentCamLandlordDashboard = () => {
+const LodgMeLandlordDashboard = () => {
   const [listings, setListings] = useState<Property[]>([]);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
 
@@ -112,4 +112,4 @@ const Metric = ({ icon: Icon, label, value }: { icon: typeof Building2; label: s
   </Card>
 );
 
-export default RentCamLandlordDashboard;
+export default LodgMeLandlordDashboard;

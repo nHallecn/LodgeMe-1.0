@@ -15,8 +15,8 @@ function makeError(message, statusCode, code, field) {
 }
 
 function generateOtp() {
-  if (process.env.RENTCAM_DEV_OTP && process.env.NODE_ENV !== "production") {
-    return process.env.RENTCAM_DEV_OTP;
+  if (process.env.LODGME_DEV_OTP && process.env.NODE_ENV !== "production") {
+    return process.env.LODGME_DEV_OTP;
   }
   return String(crypto.randomInt(100000, 1000000));
 }
@@ -35,7 +35,7 @@ class AuthService {
 
     // Production should send this through Africa's Talking. During defence/dev,
     // returning the code keeps the flow testable without paid SMS credentials.
-    console.info(`RentCam OTP for ${phone}: ${code}`);
+    console.info(`LodgMe OTP for ${phone}: ${code}`);
 
     return {
       phone,
@@ -97,7 +97,7 @@ class AuthService {
 
   static async registerUser() {
     throw makeError(
-      "RentCam uses phone OTP. Call /api/v1/auth/request-otp then /api/v1/auth/verify-otp.",
+      "LodgMe uses phone OTP. Call /api/v1/auth/request-otp then /api/v1/auth/verify-otp.",
       410,
       "PASSWORD_AUTH_DISABLED",
       "phone"
@@ -106,7 +106,7 @@ class AuthService {
 
   static async loginUser() {
     throw makeError(
-      "RentCam uses phone OTP. Call /api/v1/auth/request-otp then /api/v1/auth/verify-otp.",
+      "LodgMe uses phone OTP. Call /api/v1/auth/request-otp then /api/v1/auth/verify-otp.",
       410,
       "PASSWORD_AUTH_DISABLED",
       "phone"

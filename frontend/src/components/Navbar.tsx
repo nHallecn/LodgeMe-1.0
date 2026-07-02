@@ -23,7 +23,7 @@ const Navbar = () => {
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
             <Building2 className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="font-display text-xl font-bold text-foreground">RentCam</span>
+          <span className="font-display text-xl font-bold text-foreground">LodgMe</span>
         </Link>
 
         <div className="hidden items-center gap-1 md:flex">
@@ -43,7 +43,7 @@ const Navbar = () => {
               </Button>
               <div className="flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5">
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                  {(user?.fullName || user?.name || user?.phone || "R").charAt(0).toUpperCase()}
+                  {(user?.fullName || user?.name || user?.phone || "L").charAt(0).toUpperCase()}
                 </div>
                 <span className="text-sm font-medium text-foreground">{user?.fullName || user?.name || user?.phone}</span>
               </div>

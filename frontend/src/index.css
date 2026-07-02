@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
+    --background: 210 40% 98%;
     --foreground: 220 25% 10%;
 
     --card: 0 0% 100%;
@@ -15,7 +15,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 25% 10%;
 
-    --primary: 202 73% 38%;
+    --primary: 206 86% 46%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 14% 96%;
@@ -24,7 +24,7 @@
     --muted: 220 14% 96%;
     --muted-foreground: 220 10% 46%;
 
-    --accent: 38 92% 50%;
+    --accent: 36 96% 53%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
@@ -32,7 +32,7 @@
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 202 73% 38%;
+    --ring: 206 86% 46%;
 
     --radius: 0.5rem;
 
@@ -45,7 +45,7 @@
     --sidebar-border: 220 20% 18%;
     --sidebar-ring: 165 60% 40%;
 
-    --success: 142 71% 45%;
+    --success: 156 76% 38%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
@@ -63,7 +63,7 @@
     --popover: 220 25% 10%;
     --popover-foreground: 210 20% 98%;
 
-    --primary: 202 73% 46%;
+    --primary: 206 86% 52%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 20% 16%;
@@ -80,7 +80,7 @@
 
     --border: 220 20% 18%;
     --input: 220 20% 18%;
-    --ring: 202 73% 46%;
+    --ring: 206 86% 52%;
 
     --sidebar-background: 220 30% 5%;
     --sidebar-foreground: 210 20% 98%;
@@ -110,5 +110,62 @@
 @layer utilities {
   .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-success;
+  }
+}
+
+@layer utilities {
+  @keyframes hero-kenburns {
+    0%, 100% { transform: scale(1.05) translate3d(0, 0, 0); }
+    50% { transform: scale(1.13) translate3d(1.5%, -1.2%, 0); }
+  }
+
+  @keyframes shimmer-line {
+    0% { transform: translateX(-100%); opacity: 0.35; }
+    50% { opacity: 1; }
+    100% { transform: translateX(100%); opacity: 0.35; }
+  }
+
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  @keyframes nudge-x {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(3px); }
+  }
+
+  @keyframes ping-soft {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.45); opacity: 0.58; }
+  }
+
+  @keyframes sweep {
+    0% { transform: translateX(-120%); }
+    100% { transform: translateX(120%); }
+  }
+
+  .animate-hero-kenburns {
+    animation: hero-kenburns 18s ease-in-out infinite;
+  }
+
+  .animate-shimmer-line {
+    animation: shimmer-line 4s ease-in-out infinite;
+  }
+
+  .animate-marquee {
+    animation: marquee 28s linear infinite;
+  }
+
+  .animate-nudge-x {
+    animation: nudge-x 1.2s ease-in-out infinite;
+  }
+
+  .animate-ping-soft {
+    animation: ping-soft 2.2s ease-in-out infinite;
+  }
+
+  .animate-sweep {
+    animation: sweep 5.5s ease-in-out infinite;
   }
 }

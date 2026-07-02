@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { listingsAPI } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
-const RentCamListingForm = () => {
+const LodgMeListingForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -71,7 +71,7 @@ const RentCamListingForm = () => {
       <main className="container mx-auto max-w-4xl px-4 py-8">
         <div className="mb-6">
           <h1 className="font-display text-3xl font-bold">Submit listing</h1>
-          <p className="mt-1 text-muted-foreground">New listings enter the admin verification queue.</p>
+          <p className="mt-1 text-muted-foreground">New LodgMe listings enter the admin verification queue.</p>
         </div>
 
         <form onSubmit={submit}>
@@ -149,4 +149,4 @@ const Field = ({
   </div>
 );
 
-export default RentCamListingForm;
+export default LodgMeListingForm;

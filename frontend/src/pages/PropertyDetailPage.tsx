@@ -42,7 +42,7 @@ const PropertyDetailPage = () => {
   const whatsappHref = useMemo(() => {
     if (!listing?.landlordPhone) return "";
     const phone = listing.landlordPhone.replace(/\D/g, "");
-    const text = encodeURIComponent(`Hello, I saw "${listing.title}" on RentCam and I am interested.`);
+    const text = encodeURIComponent(`Hello, I saw "${listing.title}" on LodgMe and I am interested.`);
     return `https://wa.me/${phone}?text=${text}`;
   }, [listing]);
 
@@ -112,7 +112,7 @@ const PropertyDetailPage = () => {
               <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
             ) : (
               <div className="flex h-full items-center justify-center bg-[linear-gradient(135deg,#dbeafe,#f9fafb,#dcfce7)]">
-                <span className="font-display text-2xl font-bold text-muted-foreground">RentCam</span>
+                <span className="font-display text-2xl font-bold text-muted-foreground">LodgMe</span>
               </div>
             )}
           </div>

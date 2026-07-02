@@ -72,10 +72,10 @@ const LoginPage = ({ mode = "login" }: LoginPageProps) => {
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
             <Building2 className="h-5 w-5" />
           </div>
-          <span className="font-display text-xl font-bold">RentCam</span>
+          <span className="font-display text-xl font-bold">LodgMe</span>
         </Link>
         <div>
-          <h1 className="font-display text-4xl font-bold">Phone-first rental access for Cameroon.</h1>
+          <h1 className="font-display text-4xl font-bold">Classic rental access for Cameroon.</h1>
           <p className="mt-4 max-w-md text-white/70">
             Use one Cameroon number to search, inquire, list property, and manage verification workflows.
           </p>
@@ -88,12 +88,12 @@ const LoginPage = ({ mode = "login" }: LoginPageProps) => {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <Building2 className="h-5 w-5" />
             </div>
-            <span className="font-display text-xl font-bold">RentCam</span>
+            <span className="font-display text-xl font-bold">LodgMe</span>
           </Link>
 
           <Card>
             <CardHeader>
-              <CardTitle className="font-display text-2xl">{isRegister ? "Create RentCam account" : "Sign in with phone"}</CardTitle>
+              <CardTitle className="font-display text-2xl">{isRegister ? "Create LodgMe account" : "Sign in with phone"}</CardTitle>
               <CardDescription>{step === "phone" ? "Enter your Cameroon number to receive a 6-digit code." : "Enter the OTP code to continue."}</CardDescription>
             </CardHeader>
             <CardContent>
@@ -156,7 +156,7 @@ const LoginPage = ({ mode = "login" }: LoginPageProps) => {
               )}
 
               <p className="mt-6 text-center text-sm text-muted-foreground">
-                {isRegister ? "Already have an account?" : "New to RentCam?"}{" "}
+                {isRegister ? "Already have an account?" : "New to LodgMe?"}{" "}
                 <Link to={isRegister ? "/auth/login" : "/auth/register"} className="font-medium text-primary hover:underline">
                   {isRegister ? "Sign in" : "Create account"}
                 </Link>

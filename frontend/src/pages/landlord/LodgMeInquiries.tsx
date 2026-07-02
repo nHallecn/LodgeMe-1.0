@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { inquiriesAPI } from "@/lib/api";
 import type { Inquiry } from "@/types";
 
-const RentCamInquiries = () => {
+const LodgMeInquiries = () => {
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
 
   const load = () => {
@@ -61,4 +61,4 @@ const RentCamInquiries = () => {
   );
 };
 
-export default RentCamInquiries;
+export default LodgMeInquiries;

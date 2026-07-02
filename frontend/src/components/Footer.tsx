@@ -11,10 +11,10 @@ const Footer = () => {
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
                 <Building2 className="h-5 w-5 text-primary-foreground" />
               </div>
-              <span className="font-display text-xl font-bold">RentCam</span>
+              <span className="font-display text-xl font-bold">LodgMe</span>
             </div>
             <p className="text-sm leading-relaxed text-white/65">
-              Verified rental discovery for tenants, landlords, and agents in Cameroon.
+              Classic and modern rental discovery for tenants, landlords, and agents in Cameroon.
             </p>
           </div>
 
@@ -43,7 +43,7 @@ const Footer = () => {
                 <MapPin className="h-4 w-4 shrink-0" /> Yaounde, Cameroon
               </div>
               <div className="flex items-center gap-2 text-sm text-white/70">
-                <Mail className="h-4 w-4 shrink-0" /> hello@rentcam.cm
+                <Mail className="h-4 w-4 shrink-0" /> hello@lodgme.cm
               </div>
               <div className="flex items-center gap-2 text-sm text-white/70">
                 <Phone className="h-4 w-4 shrink-0" /> +237 672 433 563
@@ -53,7 +53,7 @@ const Footer = () => {
         </div>
 
         <div className="mt-10 border-t border-white/10 pt-6 text-center text-sm text-white/45">
-          {new Date().getFullYear()} RentCam. All rights reserved.
+          {new Date().getFullYear()} LodgMe. All rights reserved.
         </div>
       </div>
     </footer>

@@ -1,4 +1,4 @@
--- RentCam PostgreSQL schema
+-- LodgMe PostgreSQL schema
 -- Run with: psql "$DATABASE_URL" -f backend/db/schema.sql
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -306,7 +306,7 @@ CREATE TABLE IF NOT EXISTS neighbourhoods (
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE OR REPLACE FUNCTION rentcam_touch_updated_at()
+CREATE OR REPLACE FUNCTION lodgme_touch_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
   NEW.updated_at = NOW();
@@ -314,7 +314,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION rentcam_properties_search_vector()
+CREATE OR REPLACE FUNCTION lodgme_properties_search_vector()
 RETURNS TRIGGER AS $$
 BEGIN
   NEW.search_vector :=
@@ -329,29 +329,29 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS trg_users_updated_at ON users;
 CREATE TRIGGER trg_users_updated_at
 BEFORE UPDATE ON users
-FOR EACH ROW EXECUTE FUNCTION rentcam_touch_updated_at();
+FOR EACH ROW EXECUTE FUNCTION lodgme_touch_updated_at();
 
 DROP TRIGGER IF EXISTS trg_properties_updated_at ON properties;
 CREATE TRIGGER trg_properties_updated_at
 BEFORE UPDATE ON properties
-FOR EACH ROW EXECUTE FUNCTION rentcam_touch_updated_at();
+FOR EACH ROW EXECUTE FUNCTION lodgme_touch_updated_at();
 
 DROP TRIGGER IF EXISTS trg_properties_search_vector ON properties;
 CREATE TRIGGER trg_properties_search_vector
 BEFORE INSERT OR UPDATE ON properties
-FOR EACH ROW EXECUTE FUNCTION rentcam_properties_search_vector();
+FOR EACH ROW EXECUTE FUNCTION lodgme_properties_search_vector();
 
 DROP TRIGGER IF EXISTS trg_inquiries_updated_at ON inquiries;
 CREATE TRIGGER trg_inquiries_updated_at
 BEFORE UPDATE ON inquiries
-FOR EACH ROW EXECUTE FUNCTION rentcam_touch_updated_at();
+FOR EACH ROW EXECUTE FUNCTION lodgme_touch_updated_at();
 
 DROP TRIGGER IF EXISTS trg_leases_updated_at ON leases;
 CREATE TRIGGER trg_leases_updated_at
 BEFORE UPDATE ON leases
-FOR EACH ROW EXECUTE FUNCTION rentcam_touch_updated_at();
+FOR EACH ROW EXECUTE FUNCTION lodgme_touch_updated_at();
 
 DROP TRIGGER IF EXISTS trg_payments_updated_at ON payments;
 CREATE TRIGGER trg_payments_updated_at
 BEFORE UPDATE ON payments
-FOR EACH ROW EXECUTE FUNCTION rentcam_touch_updated_at();
+FOR EACH ROW EXECUTE FUNCTION lodgme_touch_updated_at();

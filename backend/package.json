@@ -1,7 +1,7 @@
 {
-  "name": "rentcam-api",
+  "name": "lodgme-api",
   "version": "1.0.0",
-  "description": "RentCam Express API backed by PostgreSQL",
+  "description": "LodgMe Express API backed by PostgreSQL",
   "main": "server.js",
   "dependencies": {
     "accepts": "^2.0.0",
